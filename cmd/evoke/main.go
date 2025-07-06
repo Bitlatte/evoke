@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli/v3"
 )
@@ -35,5 +37,46 @@ func build() error {
 	if err := os.MkdirAll("dist", 0755); err != nil {
 		return fmt.Errorf("error creating output directory: %w", err)
 	}
+
+	// Copy the public directory
+	if err := copyDirectory("public", "dist"); err != nil {
+		return fmt.Errorf("error copying public directory: %w", err)
+	}
+
 	return nil
+}
+
+func copyDirectory(src, dest string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Create a parallel structure in the destination
+		destPath := filepath.Join(dest, path[len(src):])
+
+		if info.IsDir() {
+			return os.MkdirAll(destPath, info.Mode())
+		}
+
+		// Copy the file
+		return copyFile(path, destPath)
+	})
+}
+
+func copyFile(src, dest string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
 }
