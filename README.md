@@ -21,11 +21,7 @@ There are more things we could mention but I think its best to let you experienc
 
 ### Installation
 
-To install evoke, you need to have Go installed on your system. You can then install evoke by running the following command:
-
-```
-go install github.com/Bitlatte/evoke/cmd/evoke@latest
-```
+**NOT COMPLETED**
 
 ### Project Structure
 
@@ -96,7 +92,7 @@ HTML partials are just snippets that get reused in multiple places for example a
 
 This file is optional. If you stick to all the defaults, there is no real need for this file. If you do need an evoke.yaml file, just know it accepts any key-value pair you need. You will have access to those key-values inside your templates like such:
 
-{{ .Evoke._key_ }}
+{{ ._key_ }}
 
 where _key_ is the key associated with a value.
 
