@@ -46,6 +46,19 @@ func main() {
 }
 
 func build() error {
+	// Load extensions
+	extensions, err := loadExtensions()
+	if err != nil {
+		return fmt.Errorf("error loading extensions: %w", err)
+	}
+
+	// Run BeforeBuild hooks
+	for _, ext := range extensions {
+		if err := ext.BeforeBuild(); err != nil {
+			return fmt.Errorf("error running BeforeBuild hook: %w", err)
+		}
+	}
+
 	fmt.Println("Building...")
 	// Create the output directory
 	if err := os.MkdirAll("dist", 0755); err != nil {
@@ -85,7 +98,18 @@ func build() error {
 		return nil
 	})
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Run AfterBuild hooks
+	for _, ext := range extensions {
+		if err := ext.AfterBuild(); err != nil {
+			return fmt.Errorf("error running AfterBuild hook: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func copyDirectory(src, dest string) error {
