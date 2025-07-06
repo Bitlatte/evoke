@@ -43,7 +43,32 @@ func build() error {
 		return fmt.Errorf("error copying public directory: %w", err)
 	}
 
-	return nil
+	// Process content
+	config, err := loadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading config: %w", err)
+	}
+
+	templates, err := loadTemplates()
+	if err != nil {
+		return fmt.Errorf("error loading templates: %w", err)
+	}
+
+	err = filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			if filepath.Ext(path) == ".html" {
+				return processHTML(path, config, templates)
+			}
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func copyDirectory(src, dest string) error {

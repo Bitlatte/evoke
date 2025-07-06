@@ -1,0 +1,43 @@
+package main
+
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestProcessHTML_CreatesFileInDist(t *testing.T) {
+	// Arrange
+	distDir := "dist"
+	contentDir := "content"
+	templatesDir := "templates"
+	os.RemoveAll(distDir)
+	os.MkdirAll(contentDir, 0755)
+	os.MkdirAll(templatesDir, 0755)
+
+	// Create a dummy content file
+	os.WriteFile("content/index.html", []byte("<h1>{{.Title}}</h1>"), 0644)
+	// Create a dummy template file
+	os.WriteFile("templates/base.html", []byte("<html><body>{{.Content}}</body></html>"), 0644)
+
+	config := map[string]interface{}{"Title": "My Test Site"}
+	templates, _ := loadTemplates()
+
+	// Act
+	err := processHTML("content/index.html", config, templates)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.FileExists(t, "dist/index.html")
+
+	// Verify the content of the created file
+	content, err := os.ReadFile("dist/index.html")
+	assert.NoError(t, err)
+	assert.Contains(t, string(content), "<h1>My Test Site</h1>")
+
+	// Clean up
+	os.RemoveAll(distDir)
+	os.RemoveAll(contentDir)
+	os.RemoveAll(templatesDir)
+}
