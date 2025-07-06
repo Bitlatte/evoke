@@ -41,3 +41,38 @@ func TestProcessHTML_CreatesFileInDist(t *testing.T) {
 	os.RemoveAll(contentDir)
 	os.RemoveAll(templatesDir)
 }
+
+func TestProcessMarkdown_CreatesFileInDist(t *testing.T) {
+	// Arrange
+	distDir := "dist"
+	contentDir := "content"
+	templatesDir := "templates"
+	os.RemoveAll(distDir)
+	os.MkdirAll(contentDir, 0755)
+	os.MkdirAll(templatesDir, 0755)
+
+	// Create a dummy content file
+	os.WriteFile("content/post.md", []byte("# My Post"), 0644)
+	// Create a dummy template file
+	os.WriteFile("templates/post.html", []byte("<html><body>{{.Content}}</body></html>"), 0644)
+
+	config := map[string]interface{}{}
+	templates, _ := loadTemplates()
+
+	// Act
+	err := processMarkdown("content/post.md", config, templates)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.FileExists(t, "dist/post.html")
+
+	// Verify the content of the created file
+	content, err := os.ReadFile("dist/post.html")
+	assert.NoError(t, err)
+	assert.Contains(t, string(content), "<h1>My Post</h1>")
+
+	// Clean up
+	os.RemoveAll(distDir)
+	os.RemoveAll(contentDir)
+	os.RemoveAll(templatesDir)
+}

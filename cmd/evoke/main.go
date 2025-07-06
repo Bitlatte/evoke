@@ -60,8 +60,11 @@ func build() error {
 		}
 
 		if !info.IsDir() {
-			if filepath.Ext(path) == ".html" {
+			ext := filepath.Ext(path)
+			if ext == ".html" {
 				return processHTML(path, config, templates)
+			} else if ext == ".md" {
+				return processMarkdown(path, config, templates)
 			}
 		}
 

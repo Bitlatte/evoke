@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+
+	"github.com/yuin/goldmark"
 )
 
 func processHTML(path string, config map[string]interface{}, templates *template.Template) error {
@@ -29,6 +31,40 @@ func processHTML(path string, config map[string]interface{}, templates *template
 
 	// Determine the output path
 	outputPath := filepath.Join("dist", path[len("content"):])
+	os.MkdirAll(filepath.Dir(outputPath), 0755)
+
+	// Write the processed content to the output file
+	return os.WriteFile(outputPath, processedContent.Bytes(), 0644)
+}
+
+func processMarkdown(path string, config map[string]interface{}, templates *template.Template) error {
+	// Read the content of the Markdown file
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	// Convert Markdown to HTML
+	var buf bytes.Buffer
+	if err := goldmark.Convert(content, &buf); err != nil {
+		return err
+	}
+
+	// Determine the template name
+	templateName := "post.html" // This will need to be more dynamic later
+
+	// Execute the template with the config and content
+	var processedContent bytes.Buffer
+	err = templates.ExecuteTemplate(&processedContent, templateName, map[string]interface{}{
+		"Content": template.HTML(buf.String()),
+		"Evoke":   config,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Determine the output path
+	outputPath := filepath.Join("dist", path[len("content"):len(path)-3]+".html")
 	os.MkdirAll(filepath.Dir(outputPath), 0755)
 
 	// Write the processed content to the output file
