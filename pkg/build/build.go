@@ -2,14 +2,13 @@ package build
 
 import (
 	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
 
 	"github.com/Bitlatte/evoke/pkg/config"
 	"github.com/Bitlatte/evoke/pkg/content"
 	"github.com/Bitlatte/evoke/pkg/extensions"
-	"github.com/Bitlatte/evoke/pkg/templates"
+	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/Bitlatte/evoke/pkg/util"
 )
 
@@ -46,11 +45,12 @@ func Build() error {
 		return fmt.Errorf("error loading config: %w", err)
 	}
 
-	var loadedTemplates *template.Template
-	if _, err := os.Stat("templates"); !os.IsNotExist(err) {
-		loadedTemplates, err = templates.LoadTemplates()
+	// Load partials
+	var t *partials.Partials
+	if _, err := os.Stat("partials"); !os.IsNotExist(err) {
+		t, err = partials.LoadPartials()
 		if err != nil {
-			return fmt.Errorf("error loading templates: %w", err)
+			return fmt.Errorf("error loading partials: %w", err)
 		}
 	}
 
@@ -63,13 +63,13 @@ func Build() error {
 					return err
 				}
 
-				if !info.IsDir() {
+				if !info.IsDir() && info.Name()[0] != '_' {
 					ext := filepath.Ext(path)
 					switch ext {
 					case ".html":
-						return content.ProcessHTML(path, loadedConfig, loadedTemplates)
+						return content.ProcessHTML(path, loadedConfig, t)
 					case ".md":
-						return content.ProcessMarkdown(path, loadedConfig, loadedTemplates)
+						return content.ProcessMarkdown(path, loadedConfig, t)
 					}
 				}
 

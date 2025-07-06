@@ -2,31 +2,73 @@ package content
 
 import (
 	"bytes"
-	"html/template"
 	"os"
 	"path/filepath"
 
+	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/yuin/goldmark"
 )
 
-func ProcessHTML(path string, config map[string]interface{}, templates *template.Template) error {
+func findLayouts(path string) ([]string, error) {
+	var layouts []string
+	dir := filepath.Dir(path)
+	for {
+		layoutPath := filepath.Join(dir, "_layout.html")
+		if _, err := os.Stat(layoutPath); err == nil {
+			layouts = append(layouts, layoutPath)
+		}
+		if dir == "content" || dir == "." || dir == "/" {
+			break
+		}
+		dir = filepath.Dir(dir)
+	}
+	// Reverse the layouts slice so that the outermost layout is first
+	for i, j := 0, len(layouts)-1; i < j; i, j = i+1, j-1 {
+		layouts[i], layouts[j] = layouts[j], layouts[i]
+	}
+	return layouts, nil
+}
+
+func ProcessHTML(path string, config map[string]any, partials *partials.Partials) error {
 	// Read the content of the HTML file
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	// Create a new template, and parse the content of the file
-	tmpl, err := template.New("").Parse(string(content))
+	// Find layouts
+	layouts, err := findLayouts(path)
 	if err != nil {
 		return err
 	}
 
-	// Execute the template with the config
+	// Execute the templates
 	var processedContent bytes.Buffer
-	err = tmpl.Execute(&processedContent, config)
-	if err != nil {
-		return err
+	// If there are layouts, execute them
+	if len(layouts) > 0 {
+		// Clone the partials template
+		t, err := partials.Clone()
+		if err != nil {
+			return err
+		}
+		// Parse the layout files into the template set
+		_, err = t.ParseFiles(layouts...)
+		if err != nil {
+			return err
+		}
+		// Parse the content as a template named "content"
+		_, err = t.New("content").Parse(string(content))
+		if err != nil {
+			return err
+		}
+		// Execute the layout
+		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), config)
+		if err != nil {
+			return err
+		}
+	} else {
+		// If there are no layouts, just use the file content
+		processedContent.Write(content)
 	}
 
 	// Determine the output path
@@ -37,7 +79,7 @@ func ProcessHTML(path string, config map[string]interface{}, templates *template
 	return os.WriteFile(outputPath, processedContent.Bytes(), 0644)
 }
 
-func ProcessMarkdown(path string, config map[string]interface{}, templates *template.Template) error {
+func ProcessMarkdown(path string, config map[string]any, partials *partials.Partials) error {
 	// Read the content of the Markdown file
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -50,17 +92,39 @@ func ProcessMarkdown(path string, config map[string]interface{}, templates *temp
 		return err
 	}
 
-	// Determine the template name
-	templateName := "post.html" // This will need to be more dynamic later
-
-	// Execute the template with the config and content
-	var processedContent bytes.Buffer
-	err = templates.ExecuteTemplate(&processedContent, templateName, map[string]interface{}{
-		"Content": template.HTML(buf.String()),
-		"Evoke":   config,
-	})
+	// Find layouts
+	layouts, err := findLayouts(path)
 	if err != nil {
 		return err
+	}
+
+	// Execute the templates
+	var processedContent bytes.Buffer
+	// If there are layouts, execute them
+	if len(layouts) > 0 {
+		// Clone the partials template
+		t, err := partials.Clone()
+		if err != nil {
+			return err
+		}
+		// Parse the layout files into the template set
+		_, err = t.ParseFiles(layouts...)
+		if err != nil {
+			return err
+		}
+		// Parse the content as a template named "content"
+		_, err = t.New("content").Parse(buf.String())
+		if err != nil {
+			return err
+		}
+		// Execute the layout
+		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), config)
+		if err != nil {
+			return err
+		}
+	} else {
+		// If there are no layouts, just use the file content
+		processedContent.Write(buf.Bytes())
 	}
 
 	// Determine the output path

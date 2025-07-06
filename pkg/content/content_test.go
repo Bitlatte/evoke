@@ -5,29 +5,29 @@ import (
 	"testing"
 
 	"github.com/Bitlatte/evoke/pkg/content"
-	"github.com/Bitlatte/evoke/pkg/templates"
+	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProcessHTML_CreatesFileInDist(t *testing.T) {
+func TestProcessHTML_WithLayout(t *testing.T) {
 	// Arrange
 	distDir := "dist"
 	contentDir := "content"
-	templatesDir := "templates"
+	partialsDir := "partials"
 	os.RemoveAll(distDir)
 	os.MkdirAll(contentDir, 0755)
-	os.MkdirAll(templatesDir, 0755)
+	os.MkdirAll(partialsDir, 0755)
 
 	// Create a dummy content file
-	os.WriteFile("content/index.html", []byte("<h1>{{.Title}}</h1>"), 0644)
-	// Create a dummy template file
-	os.WriteFile("templates/base.html", []byte("<html><body>{{.Content}}</body></html>"), 0644)
+	os.WriteFile("content/index.html", []byte("<h1>Hello</h1>"), 0644)
+	// Create a dummy layout file
+	os.WriteFile("content/_layout.html", []byte("<html><body>{{.Content}}</body></html>"), 0644)
 
-	config := map[string]interface{}{"Title": "My Test Site"}
-	loadedTemplates, _ := templates.LoadTemplates()
+	config := map[string]interface{}{}
+	loadedPartials, _ := partials.LoadPartials()
 
 	// Act
-	err := content.ProcessHTML("content/index.html", config, loadedTemplates)
+	err := content.ProcessHTML("content/index.html", config, loadedPartials)
 
 	// Assert
 	assert.NoError(t, err)
@@ -36,33 +36,33 @@ func TestProcessHTML_CreatesFileInDist(t *testing.T) {
 	// Verify the content of the created file
 	content, err := os.ReadFile("dist/index.html")
 	assert.NoError(t, err)
-	assert.Contains(t, string(content), "<h1>My Test Site</h1>")
+	assert.Contains(t, string(content), "<html><body><h1>Hello</h1></body></html>")
 
 	// Clean up
 	os.RemoveAll(distDir)
 	os.RemoveAll(contentDir)
-	os.RemoveAll(templatesDir)
+	os.RemoveAll(partialsDir)
 }
 
-func TestProcessMarkdown_CreatesFileInDist(t *testing.T) {
+func TestProcessMarkdown_WithLayout(t *testing.T) {
 	// Arrange
 	distDir := "dist"
 	contentDir := "content"
-	templatesDir := "templates"
+	partialsDir := "partials"
 	os.RemoveAll(distDir)
 	os.MkdirAll(contentDir, 0755)
-	os.MkdirAll(templatesDir, 0755)
+	os.MkdirAll(partialsDir, 0755)
 
 	// Create a dummy content file
 	os.WriteFile("content/post.md", []byte("# My Post"), 0644)
-	// Create a dummy template file
-	os.WriteFile("templates/post.html", []byte("<html><body>{{.Content}}</body></html>"), 0644)
+	// Create a dummy layout file
+	os.WriteFile("content/_layout.html", []byte("<html><body>{{.Content}}</body></html>"), 0644)
 
 	config := map[string]interface{}{}
-	loadedTemplates, _ := templates.LoadTemplates()
+	loadedPartials, _ := partials.LoadPartials()
 
 	// Act
-	err := content.ProcessMarkdown("content/post.md", config, loadedTemplates)
+	err := content.ProcessMarkdown("content/post.md", config, loadedPartials)
 
 	// Assert
 	assert.NoError(t, err)
@@ -71,10 +71,10 @@ func TestProcessMarkdown_CreatesFileInDist(t *testing.T) {
 	// Verify the content of the created file
 	content, err := os.ReadFile("dist/post.html")
 	assert.NoError(t, err)
-	assert.Contains(t, string(content), "<h1>My Post</h1>")
+	assert.Contains(t, string(content), "<html><body><h1>My Post</h1>\n</body></html>")
 
 	// Clean up
 	os.RemoveAll(distDir)
 	os.RemoveAll(contentDir)
-	os.RemoveAll(templatesDir)
+	os.RemoveAll(partialsDir)
 }
