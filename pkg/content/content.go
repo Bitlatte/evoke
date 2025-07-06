@@ -107,19 +107,16 @@ func ProcessMarkdown(path string, config map[string]any, partials *partials.Part
 		if err != nil {
 			return err
 		}
-		// Parse the layout files into the template set
-		_, err = t.ParseFiles(layouts...)
-		if err != nil {
+		// Define the content template
+		if _, err := t.New("content").Parse(buf.String()); err != nil {
 			return err
 		}
-		// Parse the content as a template named "content"
-		_, err = t.New("content").Parse(buf.String())
-		if err != nil {
+		// Parse the layout files into the template set
+		if _, err := t.ParseFiles(layouts...); err != nil {
 			return err
 		}
 		// Execute the layout
-		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), config)
-		if err != nil {
+		if err := t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), config); err != nil {
 			return err
 		}
 	} else {

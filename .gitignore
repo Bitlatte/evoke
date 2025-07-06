@@ -16,3 +16,18 @@ vendor/
 
 # Evoke build output
 dist/
+
+# macOS
+.DS_Store
+
+# Log files
+*.log
+
+# Editor directories and files
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
