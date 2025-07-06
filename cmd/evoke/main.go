@@ -23,6 +23,20 @@ func main() {
 					return build()
 				},
 			},
+			{
+				Name:  "extension",
+				Usage: "manage extensions",
+				Commands: []*cli.Command{
+					{
+						Name:  "get",
+						Usage: "get a new extension from a url",
+						Action: func(ctx context.Context, cmd *cli.Command) error {
+							fmt.Println("Getting extension...")
+							return nil
+						},
+					},
+				},
+			},
 		},
 	}
 
