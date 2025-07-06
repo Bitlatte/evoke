@@ -1,9 +1,10 @@
-package main
+package templates_test
 
 import (
 	"os"
 	"testing"
 
+	"github.com/Bitlatte/evoke/pkg/templates"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,12 +16,12 @@ func TestLoadTemplates_LoadsAllTemplates(t *testing.T) {
 	os.WriteFile("templates/post.html", []byte("{{.Content}}"), 0644)
 
 	// Act
-	templates, err := loadTemplates()
+	loadedTemplates, err := templates.LoadTemplates()
 
 	// Assert
 	assert.NoError(t, err)
-	assert.NotNil(t, templates.Lookup("base.html"))
-	assert.NotNil(t, templates.Lookup("post.html"))
+	assert.NotNil(t, loadedTemplates.Lookup("base.html"))
+	assert.NotNil(t, loadedTemplates.Lookup("post.html"))
 
 	// Clean up
 	os.RemoveAll(templatesDir)

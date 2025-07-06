@@ -1,4 +1,4 @@
-package main
+package templates
 
 import (
 	"html/template"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func loadTemplates() (*template.Template, error) {
+func LoadTemplates() (*template.Template, error) {
 	templates := template.New("")
 	err := filepath.Walk("templates", func(path string, info os.FileInfo, err error) error {
 		if err != nil {

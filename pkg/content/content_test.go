@@ -1,9 +1,11 @@
-package main
+package content_test
 
 import (
 	"os"
 	"testing"
 
+	"github.com/Bitlatte/evoke/pkg/content"
+	"github.com/Bitlatte/evoke/pkg/templates"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,10 +24,10 @@ func TestProcessHTML_CreatesFileInDist(t *testing.T) {
 	os.WriteFile("templates/base.html", []byte("<html><body>{{.Content}}</body></html>"), 0644)
 
 	config := map[string]interface{}{"Title": "My Test Site"}
-	templates, _ := loadTemplates()
+	loadedTemplates, _ := templates.LoadTemplates()
 
 	// Act
-	err := processHTML("content/index.html", config, templates)
+	err := content.ProcessHTML("content/index.html", config, loadedTemplates)
 
 	// Assert
 	assert.NoError(t, err)
@@ -57,10 +59,10 @@ func TestProcessMarkdown_CreatesFileInDist(t *testing.T) {
 	os.WriteFile("templates/post.html", []byte("<html><body>{{.Content}}</body></html>"), 0644)
 
 	config := map[string]interface{}{}
-	templates, _ := loadTemplates()
+	loadedTemplates, _ := templates.LoadTemplates()
 
 	// Act
-	err := processMarkdown("content/post.md", config, templates)
+	err := content.ProcessMarkdown("content/post.md", config, loadedTemplates)
 
 	// Assert
 	assert.NoError(t, err)

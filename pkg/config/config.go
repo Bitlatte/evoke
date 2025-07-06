@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func loadConfig() (map[string]interface{}, error) {
+func LoadConfig() (map[string]interface{}, error) {
 	configFile, err := os.ReadFile("evoke.yaml")
 	if err != nil {
 		// If the file doesn't exist, return an empty config

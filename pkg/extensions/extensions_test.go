@@ -1,4 +1,4 @@
-package main
+package extensions_test
 
 import (
 	"testing"

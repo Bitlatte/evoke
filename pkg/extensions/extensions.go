@@ -1,4 +1,4 @@
-package main
+package extensions
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ type Extension interface {
 	AfterBuild() error
 }
 
-func loadExtensions() ([]Extension, error) {
+func LoadExtensions() ([]Extension, error) {
 	var extensions []Extension
 
 	// Check if the extensions directory exists

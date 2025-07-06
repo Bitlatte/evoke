@@ -1,4 +1,4 @@
-package main
+package content
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"github.com/yuin/goldmark"
 )
 
-func processHTML(path string, config map[string]interface{}, templates *template.Template) error {
+func ProcessHTML(path string, config map[string]interface{}, templates *template.Template) error {
 	// Read the content of the HTML file
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -37,7 +37,7 @@ func processHTML(path string, config map[string]interface{}, templates *template
 	return os.WriteFile(outputPath, processedContent.Bytes(), 0644)
 }
 
-func processMarkdown(path string, config map[string]interface{}, templates *template.Template) error {
+func ProcessMarkdown(path string, config map[string]interface{}, templates *template.Template) error {
 	// Read the content of the Markdown file
 	content, err := os.ReadFile(path)
 	if err != nil {
