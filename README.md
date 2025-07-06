@@ -12,11 +12,20 @@ The purpose of evoke is to be a small, yet powerful static site generator. This 
 
 There are more things we could mention but I think its best to let you experience it for yourself.
 
+## Usage
+
+- `evoke build`: builds your content into static HTML.
+- `evoke extension get [url]`: get a new extension from a url.
+
 ## Getting Started
 
 ### Installation
 
-Still in development
+To install evoke, you need to have Go installed on your system. You can then install evoke by running the following command:
+
+```
+go install github.com/Bitlatte/evoke/cmd/evoke@latest
+```
 
 ### Project Structure
 
@@ -98,7 +107,7 @@ Outside of this there arent many rules that need followed by the core program. A
 Evoke allows for custom extensions to be loaded on a per project basis. Just add a `extensions` folder to the project and add plugins using the command line. Extensions are typically loaded from a url using the cli:
 
 ```
-evoke extension get github.com/evoke/sitemap-extension
+evoke extension get [url]
 ```
 
 This will automatically pull the extension and build it. Extensions can hook into the following:
