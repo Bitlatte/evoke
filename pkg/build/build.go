@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"sync"
 
 	"github.com/Bitlatte/evoke/pkg/config"
 	"github.com/Bitlatte/evoke/pkg/content"
@@ -58,23 +60,55 @@ func Build() error {
 		if statErr != nil {
 			err = fmt.Errorf("error checking content directory: %w", statErr)
 		} else {
+			var wg sync.WaitGroup
+			jobs := make(chan string)
+			errs := make(chan error, runtime.NumCPU())
+
+			for i := 0; i < runtime.NumCPU(); i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for path := range jobs {
+						ext := filepath.Ext(path)
+						var err error
+						switch ext {
+						case ".html":
+							err = content.ProcessHTML(path, loadedConfig, t)
+						case ".md":
+							err = content.ProcessMarkdown(path, loadedConfig, t)
+						}
+						if err != nil {
+							errs <- err
+						}
+					}
+				}()
+			}
+
 			err = filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
 				if err != nil {
 					return err
 				}
 
 				if !info.IsDir() && info.Name()[0] != '_' {
-					ext := filepath.Ext(path)
-					switch ext {
-					case ".html":
-						return content.ProcessHTML(path, loadedConfig, t)
-					case ".md":
-						return content.ProcessMarkdown(path, loadedConfig, t)
-					}
+					jobs <- path
 				}
 
 				return nil
 			})
+
+			close(jobs)
+			wg.Wait()
+			close(errs)
+
+			if err != nil {
+				return err
+			}
+
+			for e := range errs {
+				// For now, we'll just return the first error we see.
+				// A more robust solution might collect all errors.
+				return e
+			}
 		}
 	}
 
