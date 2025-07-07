@@ -21,6 +21,7 @@ type Content struct {
 	Config        map[string]any
 	LayoutCache   sync.Map
 	TemplateCache sync.Map
+	bufferPool    sync.Pool
 }
 
 type templateData struct {
@@ -38,6 +39,11 @@ func New(config map[string]any, partials *partials.Partials) (*Content, error) {
 				html.WithUnsafe(),
 			),
 		),
+		bufferPool: sync.Pool{
+			New: func() interface{} {
+				return new(bytes.Buffer)
+			},
+		},
 	}, nil
 }
 
@@ -86,17 +92,20 @@ func (c *Content) GetLayouts(path string) []string {
 }
 
 func (c *Content) ProcessHTML(path string) error {
-	// Read the content of the HTML file
-	fileContent, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	// Find layouts
 	layouts := c.GetLayouts(path)
 
-	// Execute the templates
-	var processedContent bytes.Buffer
+	// Get a buffer from the pool
+	processedContent := c.bufferPool.Get().(*bytes.Buffer)
+	processedContent.Reset()
+	defer c.bufferPool.Put(processedContent)
+
 	// If there are layouts, execute them
 	if len(layouts) > 0 {
 		// Get the template from the cache or parse it
@@ -104,18 +113,31 @@ func (c *Content) ProcessHTML(path string) error {
 		if err != nil {
 			return err
 		}
+
+		// Read the file content into a buffer to pass to the template
+		fileContent := c.bufferPool.Get().(*bytes.Buffer)
+		fileContent.Reset()
+		defer c.bufferPool.Put(fileContent)
+		_, err = fileContent.ReadFrom(file)
+		if err != nil {
+			return err
+		}
+
 		// Execute the layout
 		data := templateData{
 			Global:  c.Config,
-			Content: template.HTML(fileContent),
+			Content: template.HTML(fileContent.String()),
 		}
-		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), data)
+		err = t.ExecuteTemplate(processedContent, filepath.Base(layouts[0]), data)
 		if err != nil {
 			return err
 		}
 	} else {
-		// If there are no layouts, just use the file content
-		processedContent.Write(fileContent)
+		// If there are no layouts, just copy the file content
+		_, err := processedContent.ReadFrom(file)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Determine the output path
@@ -127,29 +149,45 @@ func (c *Content) ProcessHTML(path string) error {
 }
 
 func (c *Content) ProcessMarkdown(path string) error {
-	// Read the content of the Markdown file
-	fileContent, err := os.ReadFile(path)
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Get buffers from the pool
+	bodyContent := c.bufferPool.Get().(*bytes.Buffer)
+	bodyContent.Reset()
+	defer c.bufferPool.Put(bodyContent)
+
+	// Read the file into the buffer
+	_, err = bodyContent.ReadFrom(file)
 	if err != nil {
 		return err
 	}
 
 	// Parse front matter
-	frontMatter, body, err := c.ParseFrontMatter(fileContent)
+	frontMatter, body, err := c.ParseFrontMatter(bodyContent.Bytes())
 	if err != nil {
 		return err
 	}
 
 	// Convert Markdown to HTML
-	var buf bytes.Buffer
-	if err := c.Goldmark.Convert(body, &buf); err != nil {
+	mdOutput := c.bufferPool.Get().(*bytes.Buffer)
+	mdOutput.Reset()
+	defer c.bufferPool.Put(mdOutput)
+	if err := c.Goldmark.Convert(body, mdOutput); err != nil {
 		return err
 	}
 
 	// Find layouts
 	layouts := c.GetLayouts(path)
 
-	// Execute the templates
-	var processedContent bytes.Buffer
+	// Get a buffer from the pool for the final processed content
+	processedContent := c.bufferPool.Get().(*bytes.Buffer)
+	processedContent.Reset()
+	defer c.bufferPool.Put(processedContent)
+
 	// If there are layouts, execute them
 	if len(layouts) > 0 {
 		// Get the template from the cache or parse it
@@ -161,14 +199,14 @@ func (c *Content) ProcessMarkdown(path string) error {
 		data := templateData{
 			Global:  c.Config,
 			Page:    frontMatter,
-			Content: template.HTML(buf.String()),
+			Content: template.HTML(mdOutput.String()),
 		}
-		if err := t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), data); err != nil {
+		if err := t.ExecuteTemplate(processedContent, filepath.Base(layouts[0]), data); err != nil {
 			return err
 		}
 	} else {
 		// If there are no layouts, just use the file content
-		processedContent.Write(buf.Bytes())
+		processedContent.Write(mdOutput.Bytes())
 	}
 
 	// Determine the output path
