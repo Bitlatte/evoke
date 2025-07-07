@@ -7,10 +7,17 @@ import (
 	"os"
 
 	"github.com/Bitlatte/evoke/pkg/build"
+	"github.com/Bitlatte/evoke/pkg/extensions"
 	"github.com/urfave/cli/v3"
 )
 
 func main() {
+	// Load commands from extensions
+	commands, err := extensions.LoadCliCommands()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	cmd := &cli.Command{
 		Name:  "evoke",
 		Usage: "a powerful little static site generator",
@@ -38,6 +45,8 @@ func main() {
 			},
 		},
 	}
+
+	cmd.Commands = append(cmd.Commands, commands...)
 
 	if err := cmd.Run(context.Background(), os.Args); err != nil {
 		log.Fatal(err)

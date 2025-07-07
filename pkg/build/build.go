@@ -14,7 +14,7 @@ import (
 
 func Build() error {
 	// Load extensions
-	loadedExtensions, err := extensions.LoadExtensions()
+	loadedExtensions, err := extensions.LoadBuildExtensions()
 	if err != nil {
 		return fmt.Errorf("error loading extensions: %w", err)
 	}
