@@ -147,7 +147,6 @@ func Build() error {
 		return err
 	}
 
-	fmt.Println("Building...")
 	// Create the output directory
 	if err := CreateOutputDirectory(); err != nil {
 		return fmt.Errorf("error creating output directory: %w", err)
