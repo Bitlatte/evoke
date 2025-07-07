@@ -12,7 +12,7 @@ To create a partial, simply create an HTML file in the `partials` directory.
 
 ```html
 <header>
-  <h1>{{ `{{ .siteName }}` }}</h1>
+  <h1>{{ .siteName }}</h1>
 </header>
 ```
 
@@ -30,10 +30,10 @@ To use a partial in your content file, use the `template` keyword.
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ `{{ .siteName }}` }}</title>
+    <title>{{ .siteName }}</title>
   </head>
   <body>
-    {{ `{{ template "header.html" . }}` }}
-    {{ `{{ template "content" . }}` }}
+    {{ template "header.html" . }}
+    {{ .content }}
   </body>
 </html>

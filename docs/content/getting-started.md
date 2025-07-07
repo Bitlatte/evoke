@@ -1,3 +1,7 @@
+---
+title: "Getting Started with Evoke"
+---
+
 # Getting Started with Evoke
 
 Welcome to Evoke! This guide will help you get up and running with your new static site generator.
@@ -43,10 +47,10 @@ go install github.com/Bitlatte/evoke/cmd/evoke@latest
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{{ `{{ .siteName }}` }}</title>
+        <title>{{ .siteName }}</title>
       </head>
       <body>
-        {{ `{{ template "content" . }}` }}
+        {{ .content }}
       </body>
     </html>
     ```
