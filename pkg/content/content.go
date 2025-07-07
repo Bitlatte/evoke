@@ -23,6 +23,12 @@ type Content struct {
 	templateCache sync.Map
 }
 
+type ScopedConfig struct {
+	Global      map[string]any
+	FrontMatter map[string]any
+	Content     template.HTML
+}
+
 func New(config map[string]any, partials *partials.Partials) *Content {
 	return &Content{
 		partials: partials,
@@ -102,8 +108,11 @@ func (c *Content) ProcessHTML(path string) error {
 			return err
 		}
 		// Execute the layout
-		c.config["content"] = template.HTML(fileContent)
-		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), c.config)
+		scopedConfig := ScopedConfig{
+			Global:  c.config,
+			Content: template.HTML(fileContent),
+		}
+		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), scopedConfig)
 		if err != nil {
 			return err
 		}
@@ -133,15 +142,6 @@ func (c *Content) ProcessMarkdown(path string) error {
 		return err
 	}
 
-	// Create a new config map for this file to avoid modifying the global config
-	fileConfig := make(map[string]any)
-	for k, v := range c.config {
-		fileConfig[k] = v
-	}
-	for k, v := range frontMatter {
-		fileConfig[k] = v
-	}
-
 	// Convert Markdown to HTML
 	var buf bytes.Buffer
 	if err := c.goldmark.Convert(body, &buf); err != nil {
@@ -164,8 +164,12 @@ func (c *Content) ProcessMarkdown(path string) error {
 			return err
 		}
 		// Execute the layout
-		fileConfig["content"] = template.HTML(buf.String())
-		if err := t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), fileConfig); err != nil {
+		scopedConfig := ScopedConfig{
+			Global:      c.config,
+			FrontMatter: frontMatter,
+			Content:     template.HTML(buf.String()),
+		}
+		if err := t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), scopedConfig); err != nil {
 			return err
 		}
 	} else {
