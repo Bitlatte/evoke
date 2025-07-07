@@ -2,12 +2,34 @@ package content
 
 import (
 	"bytes"
+	"html/template"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/renderer/html"
+	"gopkg.in/yaml.v3"
 )
+
+func parseFrontMatter(content []byte) (map[string]any, []byte, error) {
+	var frontMatter map[string]any
+	body := content
+
+	if strings.HasPrefix(string(content), "---") {
+		parts := strings.SplitN(string(content), "---", 3)
+		if len(parts) >= 3 {
+			err := yaml.Unmarshal([]byte(parts[1]), &frontMatter)
+			if err != nil {
+				return nil, nil, err
+			}
+			body = []byte(strings.TrimSpace(parts[2]))
+		}
+	}
+
+	return frontMatter, body, nil
+}
 
 func findLayouts(path string) ([]string, error) {
 	var layouts []string
@@ -31,7 +53,7 @@ func findLayouts(path string) ([]string, error) {
 
 func ProcessHTML(path string, config map[string]any, partials *partials.Partials) error {
 	// Read the content of the HTML file
-	content, err := os.ReadFile(path)
+	fileContent, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -56,19 +78,15 @@ func ProcessHTML(path string, config map[string]any, partials *partials.Partials
 		if err != nil {
 			return err
 		}
-		// Parse the content as a template named "content"
-		_, err = t.New("content").Parse(string(content))
-		if err != nil {
-			return err
-		}
 		// Execute the layout
+		config["content"] = template.HTML(fileContent)
 		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), config)
 		if err != nil {
 			return err
 		}
 	} else {
 		// If there are no layouts, just use the file content
-		processedContent.Write(content)
+		processedContent.Write(fileContent)
 	}
 
 	// Determine the output path
@@ -81,14 +99,34 @@ func ProcessHTML(path string, config map[string]any, partials *partials.Partials
 
 func ProcessMarkdown(path string, config map[string]any, partials *partials.Partials) error {
 	// Read the content of the Markdown file
-	content, err := os.ReadFile(path)
+	fileContent, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
+	// Parse front matter
+	frontMatter, body, err := parseFrontMatter(fileContent)
+	if err != nil {
+		return err
+	}
+
+	// Create a new config map for this file to avoid modifying the global config
+	fileConfig := make(map[string]any)
+	for k, v := range config {
+		fileConfig[k] = v
+	}
+	for k, v := range frontMatter {
+		fileConfig[k] = v
+	}
+
 	// Convert Markdown to HTML
 	var buf bytes.Buffer
-	if err := goldmark.Convert(content, &buf); err != nil {
+	md := goldmark.New(
+		goldmark.WithRendererOptions(
+			html.WithUnsafe(),
+		),
+	)
+	if err := md.Convert(body, &buf); err != nil {
 		return err
 	}
 
@@ -107,16 +145,13 @@ func ProcessMarkdown(path string, config map[string]any, partials *partials.Part
 		if err != nil {
 			return err
 		}
-		// Define the content template
-		if _, err := t.New("content").Parse(buf.String()); err != nil {
-			return err
-		}
 		// Parse the layout files into the template set
 		if _, err := t.ParseFiles(layouts...); err != nil {
 			return err
 		}
 		// Execute the layout
-		if err := t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), config); err != nil {
+		fileConfig["content"] = template.HTML(buf.String())
+		if err := t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), fileConfig); err != nil {
 			return err
 		}
 	} else {
