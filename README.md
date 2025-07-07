@@ -21,7 +21,11 @@ There are more things we could mention but I think its best to let you experienc
 
 ### Installation
 
-**NOT COMPLETED**
+To get started, you'll need to have Go installed on your system. You can then install Evoke using the following command:
+
+```bash
+go install github.com/Bitlatte/evoke/cmd/evoke@latest
+```
 
 ### Project Structure
 
@@ -43,9 +47,9 @@ An evoke project is simple to get started. All you need is the following folder 
 │   │   └── sample.jpg
 │   └── js
 │       └── script.js
-└── templates
-    ├── base.html
-    └── post.html
+└── partials
+    ├── header.html
+    └── footer.html
 ```
 
 ### Content Directory
@@ -77,22 +81,21 @@ Notice how we have mixed HTML and markdown in the content directories? This is t
 
 This directory will simply be copied to the dist folder when building. This is so you can include images, css, javascript, or whatever in your pages.
 
-### Templates Directory
+### Partials Directory
 
-This directory allows you to define templates for your content. It also allows for HTML partials.
+This directory allows you to define reusable HTML snippets, called partials, for your content.
 
-**base.html**: This is your root layout in a sense. Whatever is defined here is going to show up on every page.
-**post.html**: This is where things get interesting, notice how there was a posts directory before? this file is the template for every file under the posts directory. Say we had an `articles` directory instead, you could then use `article.html` in the templates. This allows for very flexible content creation as you can basically define whatever you want.
+Partials are included in your layout and content files using the `template` keyword. For example, to include a partial named `header.html`, you would use the following syntax:
 
-#### Partials
-
-HTML partials are just snippets that get reused in multiple places for example a button. These partials can be any file that does not meet the requirements listed above. It is preferred to put partials in the `templates/partials` directory but this isn't enforced. In fact you can just mash all your partials right next to your templates and it will work just fine. It's just easier to manage by organizing them.
+```html
+{{ `{{ template "header.html" . }}` }}
+```
 
 ## evoke.yaml File
 
 This file is optional. If you stick to all the defaults, there is no real need for this file. If you do need an evoke.yaml file, just know it accepts any key-value pair you need. You will have access to those key-values inside your templates like such:
 
-{{ ._key_ }}
+{{ `{{ .key }}` }}
 
 where _key_ is the key associated with a value.
 

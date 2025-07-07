@@ -22,3 +22,7 @@ type Extension interface {
 	AfterBuild() error
 }
 ```
+
+## CLI Commands
+
+Extensions can also add new commands to the Evoke CLI. To do this, your extension will need to export a variable named `Commands` that is a slice of `*cli.Command` pointers.

@@ -4,13 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ .siteName }}</title>
-    <link rel="stylesheet" href="css/pico.jade.min.css" />
   </head>
   <body>
     <main class="container">
       <div style="display: flex; gap: 1rem">
-        <aside>{{ template "navbar.html" . }}</aside>
-        <div>
+        {{ template "navbar.html" . }}
+        <div style="width: 100%">
           <section>{{ template "content" . }}</section>
         </div>
       </div>
