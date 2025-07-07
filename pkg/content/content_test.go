@@ -104,11 +104,10 @@ func BenchmarkProcessHTML(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	// Act
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := contentProcessor.ProcessHTML("content/index.html")
 		if err != nil {
 			b.Fatal(err)
@@ -142,11 +141,10 @@ func BenchmarkProcessMarkdown(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	// Act
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := contentProcessor.ProcessMarkdown("content/post.md")
 		if err != nil {
 			b.Fatal(err)

@@ -84,11 +84,10 @@ func BenchmarkBuild(b *testing.B) {
 	os.WriteFile("partials/header.html", []byte("<header>My Header</header>"), 0644)
 	os.WriteFile("public/style.css", []byte("body { color: red; }"), 0644)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	// Run the build
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err = build.Build()
 		if err != nil {
 			b.Fatal(err)
