@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ .siteName }}</title>
+    <title>{{ .Global.siteName }}</title>
   </head>
   <body>
     <main style="margin: 0 4rem 0 4rem">
       <div style="display: flex; gap: 1rem">
         {{ template "navbar.html" . }}
         <div style="width: 100%">
-          <section>{{ .content }}</section>
+          <section>{{ .Content }}</section>
         </div>
       </div>
     </main>

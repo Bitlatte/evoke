@@ -25,10 +25,11 @@ func TestProcessHTML_WithLayout(t *testing.T) {
 
 	config := map[string]interface{}{}
 	loadedPartials, _ := partials.LoadPartials()
-	contentProcessor := content.New(config, loadedPartials)
+	contentProcessor, err := content.New(config, loadedPartials)
+	assert.NoError(t, err)
 
 	// Act
-	err := contentProcessor.ProcessHTML("content/index.html")
+	err = contentProcessor.ProcessHTML("content/index.html")
 
 	// Assert
 	assert.NoError(t, err)
@@ -61,10 +62,11 @@ func TestProcessMarkdown_WithLayout(t *testing.T) {
 
 	config := map[string]interface{}{}
 	loadedPartials, _ := partials.LoadPartials()
-	contentProcessor := content.New(config, loadedPartials)
+	contentProcessor, err := content.New(config, loadedPartials)
+	assert.NoError(t, err)
 
 	// Act
-	err := contentProcessor.ProcessMarkdown("content/post.md")
+	err = contentProcessor.ProcessMarkdown("content/post.md")
 
 	// Assert
 	assert.NoError(t, err)

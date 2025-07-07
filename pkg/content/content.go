@@ -23,7 +23,13 @@ type Content struct {
 	templateCache sync.Map
 }
 
-func New(config map[string]any, partials *partials.Partials) *Content {
+type templateData struct {
+	Global  map[string]any
+	Page    map[string]any
+	Content template.HTML
+}
+
+func New(config map[string]any, partials *partials.Partials) (*Content, error) {
 	return &Content{
 		partials: partials,
 		config:   config,
@@ -32,51 +38,51 @@ func New(config map[string]any, partials *partials.Partials) *Content {
 				html.WithUnsafe(),
 			),
 		),
-	}
+	}, nil
 }
 
 func (c *Content) parseFrontMatter(content []byte) (map[string]any, []byte, error) {
 	var frontMatter map[string]any
 	body := content
 
-	if strings.HasPrefix(string(content), "---") {
-		parts := strings.SplitN(string(content), "---", 3)
-		if len(parts) >= 3 {
-			err := yaml.Unmarshal([]byte(parts[1]), &frontMatter)
+	if bytes.HasPrefix(content, []byte("---")) {
+		end := bytes.Index(content[3:], []byte("---"))
+		if end != -1 {
+			err := yaml.Unmarshal(content[3:end+3], &frontMatter)
 			if err != nil {
 				return nil, nil, err
 			}
-			body = []byte(strings.TrimSpace(parts[2]))
+			body = bytes.TrimSpace(content[end+6:])
 		}
 	}
 
 	return frontMatter, body, nil
 }
 
-func (c *Content) findLayouts(path string) ([]string, error) {
-	if layouts, ok := c.layoutCache.Load(path); ok {
-		return layouts.([]string), nil
+func (c *Content) getLayouts(path string) []string {
+	dir := filepath.Dir(path)
+	if layouts, ok := c.layoutCache.Load(dir); ok {
+		return layouts.([]string)
 	}
 
 	var layouts []string
-	dir := filepath.Dir(path)
+	currentDir := dir
 	for {
-		layoutPath := filepath.Join(dir, "_layout.html")
+		layoutPath := filepath.Join(currentDir, "_layout.html")
 		if _, err := os.Stat(layoutPath); err == nil {
 			layouts = append(layouts, layoutPath)
 		}
-		if dir == "content" || dir == "." || dir == "/" {
+		if currentDir == "content" || currentDir == "." || currentDir == "/" {
 			break
 		}
-		dir = filepath.Dir(dir)
+		currentDir = filepath.Dir(currentDir)
 	}
 	// Reverse the layouts slice so that the outermost layout is first
 	for i, j := 0, len(layouts)-1; i < j; i, j = i+1, j-1 {
 		layouts[i], layouts[j] = layouts[j], layouts[i]
 	}
-
-	c.layoutCache.Store(path, layouts)
-	return layouts, nil
+	c.layoutCache.Store(dir, layouts)
+	return layouts
 }
 
 func (c *Content) ProcessHTML(path string) error {
@@ -87,10 +93,7 @@ func (c *Content) ProcessHTML(path string) error {
 	}
 
 	// Find layouts
-	layouts, err := c.findLayouts(path)
-	if err != nil {
-		return err
-	}
+	layouts := c.getLayouts(path)
 
 	// Execute the templates
 	var processedContent bytes.Buffer
@@ -102,8 +105,11 @@ func (c *Content) ProcessHTML(path string) error {
 			return err
 		}
 		// Execute the layout
-		c.config["content"] = template.HTML(fileContent)
-		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), c.config)
+		data := templateData{
+			Global:  c.config,
+			Content: template.HTML(fileContent),
+		}
+		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), data)
 		if err != nil {
 			return err
 		}
@@ -133,15 +139,6 @@ func (c *Content) ProcessMarkdown(path string) error {
 		return err
 	}
 
-	// Create a new config map for this file to avoid modifying the global config
-	fileConfig := make(map[string]any)
-	for k, v := range c.config {
-		fileConfig[k] = v
-	}
-	for k, v := range frontMatter {
-		fileConfig[k] = v
-	}
-
 	// Convert Markdown to HTML
 	var buf bytes.Buffer
 	if err := c.goldmark.Convert(body, &buf); err != nil {
@@ -149,10 +146,7 @@ func (c *Content) ProcessMarkdown(path string) error {
 	}
 
 	// Find layouts
-	layouts, err := c.findLayouts(path)
-	if err != nil {
-		return err
-	}
+	layouts := c.getLayouts(path)
 
 	// Execute the templates
 	var processedContent bytes.Buffer
@@ -164,8 +158,12 @@ func (c *Content) ProcessMarkdown(path string) error {
 			return err
 		}
 		// Execute the layout
-		fileConfig["content"] = template.HTML(buf.String())
-		if err := t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), fileConfig); err != nil {
+		data := templateData{
+			Global:  c.config,
+			Page:    frontMatter,
+			Content: template.HTML(buf.String()),
+		}
+		if err := t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), data); err != nil {
 			return err
 		}
 	} else {
@@ -191,11 +189,9 @@ func (c *Content) getTemplate(layouts []string) (*template.Template, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if _, err := t.Template.ParseFiles(layouts...); err != nil {
+	if _, err = t.Template.ParseFiles(layouts...); err != nil {
 		return nil, err
 	}
-
 	c.templateCache.Store(cacheKey, t.Template)
 	return t.Template, nil
 }
