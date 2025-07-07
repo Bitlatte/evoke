@@ -15,12 +15,12 @@ import (
 )
 
 type Content struct {
-	partials      *partials.Partials
-	layouts       sync.Map
-	goldmark      goldmark.Markdown
-	config        map[string]any
-	layoutCache   sync.Map
-	templateCache sync.Map
+	Partials      *partials.Partials
+	Layouts       sync.Map
+	Goldmark      goldmark.Markdown
+	Config        map[string]any
+	LayoutCache   sync.Map
+	TemplateCache sync.Map
 }
 
 type templateData struct {
@@ -31,9 +31,9 @@ type templateData struct {
 
 func New(config map[string]any, partials *partials.Partials) (*Content, error) {
 	return &Content{
-		partials: partials,
-		config:   config,
-		goldmark: goldmark.New(
+		Partials: partials,
+		Config:   config,
+		Goldmark: goldmark.New(
 			goldmark.WithRendererOptions(
 				html.WithUnsafe(),
 			),
@@ -41,7 +41,7 @@ func New(config map[string]any, partials *partials.Partials) (*Content, error) {
 	}, nil
 }
 
-func (c *Content) parseFrontMatter(content []byte) (map[string]any, []byte, error) {
+func (c *Content) ParseFrontMatter(content []byte) (map[string]any, []byte, error) {
 	var frontMatter map[string]any
 	body := content
 
@@ -59,9 +59,9 @@ func (c *Content) parseFrontMatter(content []byte) (map[string]any, []byte, erro
 	return frontMatter, body, nil
 }
 
-func (c *Content) getLayouts(path string) []string {
+func (c *Content) GetLayouts(path string) []string {
 	dir := filepath.Dir(path)
-	if layouts, ok := c.layoutCache.Load(dir); ok {
+	if layouts, ok := c.LayoutCache.Load(dir); ok {
 		return layouts.([]string)
 	}
 
@@ -81,7 +81,7 @@ func (c *Content) getLayouts(path string) []string {
 	for i, j := 0, len(layouts)-1; i < j; i, j = i+1, j-1 {
 		layouts[i], layouts[j] = layouts[j], layouts[i]
 	}
-	c.layoutCache.Store(dir, layouts)
+	c.LayoutCache.Store(dir, layouts)
 	return layouts
 }
 
@@ -93,20 +93,20 @@ func (c *Content) ProcessHTML(path string) error {
 	}
 
 	// Find layouts
-	layouts := c.getLayouts(path)
+	layouts := c.GetLayouts(path)
 
 	// Execute the templates
 	var processedContent bytes.Buffer
 	// If there are layouts, execute them
 	if len(layouts) > 0 {
 		// Get the template from the cache or parse it
-		t, err := c.getTemplate(layouts)
+		t, err := c.GetTemplate(layouts)
 		if err != nil {
 			return err
 		}
 		// Execute the layout
 		data := templateData{
-			Global:  c.config,
+			Global:  c.Config,
 			Content: template.HTML(fileContent),
 		}
 		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), data)
@@ -134,32 +134,32 @@ func (c *Content) ProcessMarkdown(path string) error {
 	}
 
 	// Parse front matter
-	frontMatter, body, err := c.parseFrontMatter(fileContent)
+	frontMatter, body, err := c.ParseFrontMatter(fileContent)
 	if err != nil {
 		return err
 	}
 
 	// Convert Markdown to HTML
 	var buf bytes.Buffer
-	if err := c.goldmark.Convert(body, &buf); err != nil {
+	if err := c.Goldmark.Convert(body, &buf); err != nil {
 		return err
 	}
 
 	// Find layouts
-	layouts := c.getLayouts(path)
+	layouts := c.GetLayouts(path)
 
 	// Execute the templates
 	var processedContent bytes.Buffer
 	// If there are layouts, execute them
 	if len(layouts) > 0 {
 		// Get the template from the cache or parse it
-		t, err := c.getTemplate(layouts)
+		t, err := c.GetTemplate(layouts)
 		if err != nil {
 			return err
 		}
 		// Execute the layout
 		data := templateData{
-			Global:  c.config,
+			Global:  c.Config,
 			Page:    frontMatter,
 			Content: template.HTML(buf.String()),
 		}
@@ -179,19 +179,19 @@ func (c *Content) ProcessMarkdown(path string) error {
 	return os.WriteFile(outputPath, processedContent.Bytes(), 0644)
 }
 
-func (c *Content) getTemplate(layouts []string) (*template.Template, error) {
+func (c *Content) GetTemplate(layouts []string) (*template.Template, error) {
 	cacheKey := strings.Join(layouts, ",")
-	if t, ok := c.templateCache.Load(cacheKey); ok {
+	if t, ok := c.TemplateCache.Load(cacheKey); ok {
 		return t.(*template.Template), nil
 	}
 
-	t, err := c.partials.Clone()
+	t, err := c.Partials.Clone()
 	if err != nil {
 		return nil, err
 	}
 	if _, err = t.Template.ParseFiles(layouts...); err != nil {
 		return nil, err
 	}
-	c.templateCache.Store(cacheKey, t.Template)
+	c.TemplateCache.Store(cacheKey, t.Template)
 	return t.Template, nil
 }

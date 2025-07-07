@@ -59,13 +59,18 @@ func LoadPartials() (*partials.Partials, error) {
 
 // ProcessContent processes the content.
 func ProcessContent(loadedConfig map[string]interface{}, t *partials.Partials) error {
+	contentProcessor, err := content.New(loadedConfig, t)
+	if err != nil {
+		return fmt.Errorf("error creating content processor: %w", err)
+	}
+	return ProcessContentWithProcessor(contentProcessor)
+}
+
+// ProcessContentWithProcessor processes the content with a given processor.
+func ProcessContentWithProcessor(contentProcessor *content.Content) error {
 	if _, statErr := os.Stat("content"); !os.IsNotExist(statErr) {
 		if statErr != nil {
 			return fmt.Errorf("error checking content directory: %w", statErr)
-		}
-		contentProcessor, err := content.New(loadedConfig, t)
-		if err != nil {
-			return fmt.Errorf("error creating content processor: %w", err)
 		}
 		var wg sync.WaitGroup
 		jobs := make(chan string)
@@ -91,7 +96,7 @@ func ProcessContent(loadedConfig map[string]interface{}, t *partials.Partials) e
 			}()
 		}
 
-		err = filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
