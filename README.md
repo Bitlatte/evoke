@@ -115,6 +115,79 @@ This will automatically pull the extension and build it. Extensions can hook int
 
 While not currently available, there are plans for an "extension library" if you will. Basically just a place with tons of extensions.
 
+## Performance
+
+The following benchmarks are run on a machine with an Apple M1 CPU. The benchmarks cover a range of site sizes to provide a comprehensive view of the engine's performance. Each test is run against both Evoke and Hugo for a direct comparison. The content for each page is dynamically generated to be roughly the specified number of lines.
+
+- **Tiny:** 1 page with ~10 lines of content.
+- **Small:** 100 pages, each with ~50 lines of content.
+- **Medium:** 1000 pages, each with ~100 lines of content.
+- **Large:** 1000 pages, each with ~500 lines of content.
+- **Huge:** 10,000 pages, each with ~500 lines of content.
+
+<!-- BENCHMARKS_START -->
+<table>
+<thead>
+<tr>
+<th>Benchmark</th>
+<th>Evoke Time/op</th>
+<th>Hugo Time/op</th>
+<th>Evoke Memory/op</th>
+<th>Hugo Memory/op</th>
+<th>Evoke Allocs/op</th>
+<th>Hugo Allocs/op</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tiny-8</td>
+<td>130.16 µs</td>
+<td>81.04 ms</td>
+<td>38.05 KB</td>
+<td>9.74 KB</td>
+<td>264</td>
+<td>47</td>
+</tr>
+<tr>
+<td>Small-8</td>
+<td>8.11 ms</td>
+<td>109.28 ms</td>
+<td>3.33 MB</td>
+<td>9.74 KB</td>
+<td>13864</td>
+<td>47</td>
+</tr>
+<tr>
+<td>Medium-8</td>
+<td>114.73 ms</td>
+<td>487.20 ms</td>
+<td>59.90 MB</td>
+<td>9.77 KB</td>
+<td>189228</td>
+<td>47</td>
+</tr>
+<tr>
+<td>Large-8</td>
+<td>269.79 ms</td>
+<td>2009.74 ms</td>
+<td>296.96 MB</td>
+<td>9.83 KB</td>
+<td>596950</td>
+<td>48</td>
+</tr>
+<tr>
+<td>Huge-8</td>
+<td>3219.10 ms</td>
+<td>28406.37 ms</td>
+<td>2945.19 MB</td>
+<td>9.83 KB</td>
+<td>5946592</td>
+<td>48</td>
+</tr>
+</tbody>
+</table>
+<!-- BENCHMARKS_END -->
+
 ## Wraping Up
 
 Yeah so this pretty much sums everything you need to know up. Only one last thing you need to be aware of, its "evoke" not "Evoke". Have a great day.
