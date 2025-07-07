@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/yuin/goldmark"
@@ -13,7 +14,28 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func parseFrontMatter(content []byte) (map[string]any, []byte, error) {
+type Content struct {
+	partials      *partials.Partials
+	layouts       sync.Map
+	goldmark      goldmark.Markdown
+	config        map[string]any
+	layoutCache   sync.Map
+	templateCache sync.Map
+}
+
+func New(config map[string]any, partials *partials.Partials) *Content {
+	return &Content{
+		partials: partials,
+		config:   config,
+		goldmark: goldmark.New(
+			goldmark.WithRendererOptions(
+				html.WithUnsafe(),
+			),
+		),
+	}
+}
+
+func (c *Content) parseFrontMatter(content []byte) (map[string]any, []byte, error) {
 	var frontMatter map[string]any
 	body := content
 
@@ -31,7 +53,11 @@ func parseFrontMatter(content []byte) (map[string]any, []byte, error) {
 	return frontMatter, body, nil
 }
 
-func findLayouts(path string) ([]string, error) {
+func (c *Content) findLayouts(path string) ([]string, error) {
+	if layouts, ok := c.layoutCache.Load(path); ok {
+		return layouts.([]string), nil
+	}
+
 	var layouts []string
 	dir := filepath.Dir(path)
 	for {
@@ -48,10 +74,12 @@ func findLayouts(path string) ([]string, error) {
 	for i, j := 0, len(layouts)-1; i < j; i, j = i+1, j-1 {
 		layouts[i], layouts[j] = layouts[j], layouts[i]
 	}
+
+	c.layoutCache.Store(path, layouts)
 	return layouts, nil
 }
 
-func ProcessHTML(path string, config map[string]any, partials *partials.Partials) error {
+func (c *Content) ProcessHTML(path string) error {
 	// Read the content of the HTML file
 	fileContent, err := os.ReadFile(path)
 	if err != nil {
@@ -59,7 +87,7 @@ func ProcessHTML(path string, config map[string]any, partials *partials.Partials
 	}
 
 	// Find layouts
-	layouts, err := findLayouts(path)
+	layouts, err := c.findLayouts(path)
 	if err != nil {
 		return err
 	}
@@ -68,19 +96,14 @@ func ProcessHTML(path string, config map[string]any, partials *partials.Partials
 	var processedContent bytes.Buffer
 	// If there are layouts, execute them
 	if len(layouts) > 0 {
-		// Clone the partials template
-		t, err := partials.Clone()
-		if err != nil {
-			return err
-		}
-		// Parse the layout files into the template set
-		_, err = t.ParseFiles(layouts...)
+		// Get the template from the cache or parse it
+		t, err := c.getTemplate(layouts)
 		if err != nil {
 			return err
 		}
 		// Execute the layout
-		config["content"] = template.HTML(fileContent)
-		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), config)
+		c.config["content"] = template.HTML(fileContent)
+		err = t.ExecuteTemplate(&processedContent, filepath.Base(layouts[0]), c.config)
 		if err != nil {
 			return err
 		}
@@ -97,7 +120,7 @@ func ProcessHTML(path string, config map[string]any, partials *partials.Partials
 	return os.WriteFile(outputPath, processedContent.Bytes(), 0644)
 }
 
-func ProcessMarkdown(path string, config map[string]any, partials *partials.Partials) error {
+func (c *Content) ProcessMarkdown(path string) error {
 	// Read the content of the Markdown file
 	fileContent, err := os.ReadFile(path)
 	if err != nil {
@@ -105,14 +128,14 @@ func ProcessMarkdown(path string, config map[string]any, partials *partials.Part
 	}
 
 	// Parse front matter
-	frontMatter, body, err := parseFrontMatter(fileContent)
+	frontMatter, body, err := c.parseFrontMatter(fileContent)
 	if err != nil {
 		return err
 	}
 
 	// Create a new config map for this file to avoid modifying the global config
 	fileConfig := make(map[string]any)
-	for k, v := range config {
+	for k, v := range c.config {
 		fileConfig[k] = v
 	}
 	for k, v := range frontMatter {
@@ -121,17 +144,12 @@ func ProcessMarkdown(path string, config map[string]any, partials *partials.Part
 
 	// Convert Markdown to HTML
 	var buf bytes.Buffer
-	md := goldmark.New(
-		goldmark.WithRendererOptions(
-			html.WithUnsafe(),
-		),
-	)
-	if err := md.Convert(body, &buf); err != nil {
+	if err := c.goldmark.Convert(body, &buf); err != nil {
 		return err
 	}
 
 	// Find layouts
-	layouts, err := findLayouts(path)
+	layouts, err := c.findLayouts(path)
 	if err != nil {
 		return err
 	}
@@ -140,13 +158,9 @@ func ProcessMarkdown(path string, config map[string]any, partials *partials.Part
 	var processedContent bytes.Buffer
 	// If there are layouts, execute them
 	if len(layouts) > 0 {
-		// Clone the partials template
-		t, err := partials.Clone()
+		// Get the template from the cache or parse it
+		t, err := c.getTemplate(layouts)
 		if err != nil {
-			return err
-		}
-		// Parse the layout files into the template set
-		if _, err := t.ParseFiles(layouts...); err != nil {
 			return err
 		}
 		// Execute the layout
@@ -165,4 +179,23 @@ func ProcessMarkdown(path string, config map[string]any, partials *partials.Part
 
 	// Write the processed content to the output file
 	return os.WriteFile(outputPath, processedContent.Bytes(), 0644)
+}
+
+func (c *Content) getTemplate(layouts []string) (*template.Template, error) {
+	cacheKey := strings.Join(layouts, ",")
+	if t, ok := c.templateCache.Load(cacheKey); ok {
+		return t.(*template.Template), nil
+	}
+
+	t, err := c.partials.Clone()
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := t.Template.ParseFiles(layouts...); err != nil {
+		return nil, err
+	}
+
+	c.templateCache.Store(cacheKey, t.Template)
+	return t.Template, nil
 }

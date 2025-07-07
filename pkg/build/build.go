@@ -60,6 +60,7 @@ func Build() error {
 		if statErr != nil {
 			err = fmt.Errorf("error checking content directory: %w", statErr)
 		} else {
+			contentProcessor := content.New(loadedConfig, t)
 			var wg sync.WaitGroup
 			jobs := make(chan string)
 			errs := make(chan error, runtime.NumCPU())
@@ -73,9 +74,9 @@ func Build() error {
 						var err error
 						switch ext {
 						case ".html":
-							err = content.ProcessHTML(path, loadedConfig, t)
+							err = contentProcessor.ProcessHTML(path)
 						case ".md":
-							err = content.ProcessMarkdown(path, loadedConfig, t)
+							err = contentProcessor.ProcessMarkdown(path)
 						}
 						if err != nil {
 							errs <- err
