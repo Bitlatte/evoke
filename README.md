@@ -8,14 +8,14 @@ The purpose of evoke is to be a small, yet powerful static site generator. This 
 
 - Sensible defaults allowing for near zero configuration.
 - Complete template support with no opinions.
-- Extension system for extending the core functionality.
+- Plugin system for extending the core functionality.
 
 There are more things we could mention but I think its best to let you experience it for yourself.
 
 ## Usage
 
 - `evoke build`: builds your content into static HTML.
-- `evoke extension get [url]`: get a new extension from a url.
+- `evoke plugin get [url]`: get a new plugin from a url.
 
 ## Getting Started
 
@@ -28,7 +28,7 @@ You can install Evoke in one of the following ways:
 You can use the following command to download and install the latest version of Evoke for your system:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Bitlatte/evoke/main/install/install.sh | sh
+curl -sSL https://raw.githubusercontent.com/Bitlatte/evoke/main/install.sh | sh
 ```
 
 **2. From a Release:**
@@ -117,19 +117,19 @@ where _key_ is the key associated with a value.
 
 Outside of this there arent many rules that need followed by the core program. Although another interesting thing evoke has is its extension system.
 
-## Extensions
+## Plugins
 
-Evoke allows for custom extensions to be loaded on a per project basis. Just add a `extensions` folder to the project and add plugins using the command line. Extensions are typically loaded from a url using the cli:
+Evoke allows for custom plugins to be loaded on a per project basis. Just add a `plugins` folder to the project and add plugins using the command line. Plugins are typically loaded from a url using the cli:
 
 ```
-evoke extension get [url]
+evoke plugin get [url]
 ```
 
-This will automatically pull the extension and build it. Extensions can hook into the following:
-- BeforeBuild: extension will run before the core build process
-- AfterBuild: extension will run after the core build process
+This will automatically pull the plugin and build it. Plugins can hook into the following:
+- BeforeBuild: plugin will run before the core build process
+- AfterBuild: plugin will run after the core build process
 
-While not currently available, there are plans for an "extension library" if you will. Basically just a place with tons of extensions.
+While not currently available, there are plans for an "plugin library" if you will. Basically just a place with tons of plugins.
 
 ## Wraping Up
 

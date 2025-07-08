@@ -15,7 +15,7 @@ You can install Evoke in one of the following ways:
 You can use the following command to download and install the latest version of Evoke for your system:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Bitlatte/evoke/main/install/install.sh | sh
+curl -sSL https://raw.githubusercontent.com/Bitlatte/evoke/main/install.sh | sh
 ```
 
 **2. From a Release:**
@@ -78,14 +78,14 @@ As your project grows, you can add more directories to organize your files:
 ├── content/      # Your site's pages (Markdown or HTML)
 ├── partials/     # Reusable HTML snippets
 ├── public/       # Static assets (CSS, images, etc.)
-├── extensions/   # Custom Evoke extensions
+├── plugins/      # Custom Evoke plugins
 └── evoke.yaml    # Optional configuration file
 ```
 
 - **`content/`**: This is where all your website's pages live. Evoke processes these files and converts them to HTML.
 - **`partials/`**: This directory holds reusable HTML snippets that you can include in your pages, like headers or footers.
 - **`public/`**: Any files in this directory (e.g., CSS, JavaScript, images) are copied directly to the `dist` folder without changes.
-- **`extensions/`**: You can add custom Go code here to extend Evoke's functionality.
+- **`plugins/`**: You can add custom Go code here to extend Evoke's functionality.
 - **`evoke.yaml`**: This optional file allows you to customize your site's settings.
 
 ## What's Next?
