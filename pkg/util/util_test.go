@@ -60,7 +60,6 @@ func TestCopyDirectory(t *testing.T) {
 }
 
 func BenchmarkCopyFile(b *testing.B) {
-	// Arrange
 	tmpDir, err := os.MkdirTemp("", "util-benchmark")
 	if err != nil {
 		b.Fatal(err)
@@ -69,21 +68,20 @@ func BenchmarkCopyFile(b *testing.B) {
 
 	srcFile := filepath.Join(tmpDir, "src.txt")
 	destFile := filepath.Join(tmpDir, "dest.txt")
-	os.WriteFile(srcFile, []byte("hello"), 0644)
+	if err := os.WriteFile(srcFile, []byte("hello"), 0644); err != nil {
+		b.Fatal(err)
+	}
 
 	b.ReportAllocs()
 
-	// Act
 	for b.Loop() {
-		err := util.CopyFile(srcFile, destFile)
-		if err != nil {
+		if err := util.CopyFile(srcFile, destFile); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkCopyDirectory(b *testing.B) {
-	// Arrange
 	tmpDir, err := os.MkdirTemp("", "util-benchmark")
 	if err != nil {
 		b.Fatal(err)
@@ -92,16 +90,20 @@ func BenchmarkCopyDirectory(b *testing.B) {
 
 	srcDir := filepath.Join(tmpDir, "src")
 	destDir := filepath.Join(tmpDir, "dest")
-	os.MkdirAll(filepath.Join(srcDir, "subdir"), 0755)
-	os.WriteFile(filepath.Join(srcDir, "file.txt"), []byte("root"), 0644)
-	os.WriteFile(filepath.Join(srcDir, "subdir", "file.txt"), []byte("nested"), 0644)
+	if err := os.MkdirAll(filepath.Join(srcDir, "subdir"), 0755); err != nil {
+		b.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "file.txt"), []byte("root"), 0644); err != nil {
+		b.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "subdir", "file.txt"), []byte("nested"), 0644); err != nil {
+		b.Fatal(err)
+	}
 
 	b.ReportAllocs()
 
-	// Act
 	for b.Loop() {
-		err := util.CopyDirectory(srcDir, destDir)
-		if err != nil {
+		if err := util.CopyDirectory(srcDir, destDir); err != nil {
 			b.Fatal(err)
 		}
 	}

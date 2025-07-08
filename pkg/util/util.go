@@ -4,7 +4,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 )
+
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return make([]byte, 32*1024)
+	},
+}
 
 func CopyDirectory(src, dest string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
@@ -37,6 +44,9 @@ func CopyFile(src, dest string) error {
 	}
 	defer destFile.Close()
 
-	_, err = io.Copy(destFile, sourceFile)
+	buf := bufferPool.Get().([]byte)
+	defer bufferPool.Put(buf)
+
+	_, err = io.CopyBuffer(destFile, sourceFile, buf)
 	return err
 }

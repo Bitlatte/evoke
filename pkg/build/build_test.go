@@ -2,6 +2,7 @@ package build_test
 
 import (
 	"os"
+	"runtime/pprof"
 	"testing"
 
 	"github.com/Bitlatte/evoke/pkg/build"
@@ -84,13 +85,26 @@ func BenchmarkBuild(b *testing.B) {
 	os.WriteFile("partials/header.html", []byte("<header>My Header</header>"), 0644)
 	os.WriteFile("public/style.css", []byte("body { color: red; }"), 0644)
 
+	// Add memory profiling
+	f, err := os.Create("mem.pprof")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer f.Close()
+
+	b.ResetTimer()
 	b.ReportAllocs()
 
 	// Run the build
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		err = build.Build()
 		if err != nil {
 			b.Fatal(err)
 		}
+	}
+
+	// Write the memory profile
+	if err := pprof.WriteHeapProfile(f); err != nil {
+		b.Fatal(err)
 	}
 }

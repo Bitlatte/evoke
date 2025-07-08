@@ -12,6 +12,8 @@ import (
 	"github.com/Bitlatte/evoke/pkg/extensions"
 	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/Bitlatte/evoke/pkg/util"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 // LoadExtensions loads the build extensions.
@@ -59,7 +61,12 @@ func LoadPartials() (*partials.Partials, error) {
 
 // ProcessContent processes the content.
 func ProcessContent(loadedConfig map[string]interface{}, t *partials.Partials) error {
-	contentProcessor, err := content.New(loadedConfig, t)
+	gm := goldmark.New(
+		goldmark.WithRendererOptions(
+			html.WithUnsafe(),
+		),
+	)
+	contentProcessor, err := content.New(loadedConfig, t, gm)
 	if err != nil {
 		return fmt.Errorf("error creating content processor: %w", err)
 	}

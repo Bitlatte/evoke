@@ -7,6 +7,8 @@ import (
 	"github.com/Bitlatte/evoke/pkg/content"
 	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/stretchr/testify/assert"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 func TestProcessHTML_WithLayout(t *testing.T) {
@@ -25,7 +27,12 @@ func TestProcessHTML_WithLayout(t *testing.T) {
 
 	config := map[string]interface{}{}
 	loadedPartials, _ := partials.LoadPartials()
-	contentProcessor, err := content.New(config, loadedPartials)
+	gm := goldmark.New(
+		goldmark.WithRendererOptions(
+			html.WithUnsafe(),
+		),
+	)
+	contentProcessor, err := content.New(config, loadedPartials, gm)
 	assert.NoError(t, err)
 
 	// Act
@@ -62,7 +69,12 @@ func TestProcessMarkdown_WithLayout(t *testing.T) {
 
 	config := map[string]interface{}{}
 	loadedPartials, _ := partials.LoadPartials()
-	contentProcessor, err := content.New(config, loadedPartials)
+	gm := goldmark.New(
+		goldmark.WithRendererOptions(
+			html.WithUnsafe(),
+		),
+	)
+	contentProcessor, err := content.New(config, loadedPartials, gm)
 	assert.NoError(t, err)
 
 	// Act
@@ -84,75 +96,103 @@ func TestProcessMarkdown_WithLayout(t *testing.T) {
 }
 
 func BenchmarkProcessHTML(b *testing.B) {
-	// Arrange
-	distDir := "dist"
-	contentDir := "content"
-	partialsDir := "partials"
-	os.RemoveAll(distDir)
-	os.MkdirAll(contentDir, 0755)
-	os.MkdirAll(partialsDir, 0755)
-
-	// Create a dummy content file
-	os.WriteFile("content/index.html", []byte("<h1>Hello</h1>"), 0644)
-	// Create a dummy layout file
-	os.WriteFile("content/_layout.html", []byte("<html><body>{{.Content}}</body></html>"), 0644)
-
-	config := map[string]interface{}{}
-	loadedPartials, _ := partials.LoadPartials()
-	contentProcessor, err := content.New(config, loadedPartials)
-	if err != nil {
-		b.Fatal(err)
+	benchmarks := []struct {
+		name    string
+		content string
+		layout  string
+	}{
+		{"Small", "<h1>Hello</h1>", "<html><body>{{.Content}}</body></html>"},
+		{"Medium", "<h1>Hello</h1><p>" + "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " + "</p>", "<html><body><header></header>{{.Content}}<footer></footer></body></html>"},
+		{"Large", "<h1>Hello</h1><p>" + "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " + "</p>" + "<div>" + "Donec a diam lectus. Sed sit amet ipsum mauris. " + "</div>", "<html><body><header></header><main>{{.Content}}</main><footer></footer></body></html>"},
 	}
 
-	b.ReportAllocs()
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			distDir := "dist"
+			contentDir := "content"
+			partialsDir := "partials"
+			os.RemoveAll(distDir)
+			os.MkdirAll(contentDir, 0755)
+			os.MkdirAll(partialsDir, 0755)
+			defer os.RemoveAll(distDir)
+			defer os.RemoveAll(contentDir)
+			defer os.RemoveAll(partialsDir)
 
-	// Act
-	for b.Loop() {
-		err := contentProcessor.ProcessHTML("content/index.html")
-		if err != nil {
-			b.Fatal(err)
-		}
+			os.WriteFile("content/index.html", []byte(bm.content), 0644)
+			os.WriteFile("content/_layout.html", []byte(bm.layout), 0644)
+
+			config := map[string]interface{}{}
+			loadedPartials, _ := partials.LoadPartials()
+			gm := goldmark.New(
+				goldmark.WithRendererOptions(
+					html.WithUnsafe(),
+				),
+			)
+			contentProcessor, err := content.New(config, loadedPartials, gm)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for b.Loop() {
+				err := contentProcessor.ProcessHTML("content/index.html")
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
-
-	// Clean up
-	os.RemoveAll(distDir)
-	os.RemoveAll(contentDir)
-	os.RemoveAll(partialsDir)
 }
 
 func BenchmarkProcessMarkdown(b *testing.B) {
-	// Arrange
-	distDir := "dist"
-	contentDir := "content"
-	partialsDir := "partials"
-	os.RemoveAll(distDir)
-	os.MkdirAll(contentDir, 0755)
-	os.MkdirAll(partialsDir, 0755)
-
-	// Create a dummy content file
-	os.WriteFile("content/post.md", []byte("# My Post"), 0644)
-	// Create a dummy layout file
-	os.WriteFile("content/_layout.html", []byte("<html><body>{{.Content}}</body></html>"), 0644)
-
-	config := map[string]interface{}{}
-	loadedPartials, _ := partials.LoadPartials()
-	contentProcessor, err := content.New(config, loadedPartials)
-	if err != nil {
-		b.Fatal(err)
+	benchmarks := []struct {
+		name    string
+		content string
+		layout  string
+	}{
+		{"Small", "# My Post", "<html><body>{{.Content}}</body></html>"},
+		{"Medium", "# My Post\n\n" + "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ", "<html><body><header></header>{{.Content}}<footer></footer></body></html>"},
+		{"Large", "# My Post\n\n" + "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " + "\n\n" + "Donec a diam lectus. Sed sit amet ipsum mauris. ", "<html><body><header></header><main>{{.Content}}</main><footer></footer></body></html>"},
 	}
 
-	b.ReportAllocs()
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			distDir := "dist"
+			contentDir := "content"
+			partialsDir := "partials"
+			os.RemoveAll(distDir)
+			os.MkdirAll(contentDir, 0755)
+			os.MkdirAll(partialsDir, 0755)
+			defer os.RemoveAll(distDir)
+			defer os.RemoveAll(contentDir)
+			defer os.RemoveAll(partialsDir)
 
-	// Act
-	for b.Loop() {
-		err := contentProcessor.ProcessMarkdown("content/post.md")
-		if err != nil {
-			b.Fatal(err)
-		}
+			os.WriteFile("content/post.md", []byte(bm.content), 0644)
+			os.WriteFile("content/_layout.html", []byte(bm.layout), 0644)
+
+			config := map[string]interface{}{}
+			loadedPartials, _ := partials.LoadPartials()
+			gm := goldmark.New(
+				goldmark.WithRendererOptions(
+					html.WithUnsafe(),
+				),
+			)
+			contentProcessor, err := content.New(config, loadedPartials, gm)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for b.Loop() {
+				err := contentProcessor.ProcessMarkdown("content/post.md")
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
-
-	// Clean up
-	os.RemoveAll(distDir)
-	os.RemoveAll(contentDir)
-	os.RemoveAll(partialsDir)
 }

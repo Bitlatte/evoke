@@ -9,7 +9,6 @@ import (
 
 	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/renderer/html"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,15 +27,11 @@ type templateData struct {
 	Content template.HTML
 }
 
-func New(config map[string]any, partials *partials.Partials) (*Content, error) {
+func New(config map[string]any, partials *partials.Partials, gm goldmark.Markdown) (*Content, error) {
 	return &Content{
 		Partials: partials,
 		Config:   config,
-		Goldmark: goldmark.New(
-			goldmark.WithRendererOptions(
-				html.WithUnsafe(),
-			),
-		),
+		Goldmark: gm,
 		bufferPool: sync.Pool{
 			New: func() interface{} {
 				return new(bytes.Buffer)
