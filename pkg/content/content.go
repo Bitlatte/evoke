@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/Bitlatte/evoke/pkg/partials"
@@ -16,7 +15,6 @@ import (
 
 type Content struct {
 	Partials      *partials.Partials
-	Layouts       sync.Map
 	Goldmark      goldmark.Markdown
 	Config        map[string]any
 	LayoutCache   sync.Map
@@ -83,10 +81,6 @@ func (c *Content) GetLayouts(path string) []string {
 		}
 		currentDir = filepath.Dir(currentDir)
 	}
-	// Reverse the layouts slice so that the outermost layout is first
-	for i, j := 0, len(layouts)-1; i < j; i, j = i+1, j-1 {
-		layouts[i], layouts[j] = layouts[j], layouts[i]
-	}
 	c.LayoutCache.Store(dir, layouts)
 	return layouts
 }
@@ -98,46 +92,24 @@ func (c *Content) ProcessHTML(path string) error {
 	}
 	defer file.Close()
 
+	// Get a buffer from the pool
+	fileContent := c.bufferPool.Get().(*bytes.Buffer)
+	fileContent.Reset()
+	defer c.bufferPool.Put(fileContent)
+
+	// Read the file into the buffer
+	_, err = fileContent.ReadFrom(file)
+	if err != nil {
+		return err
+	}
+
 	// Find layouts
 	layouts := c.GetLayouts(path)
 
-	// Get a buffer from the pool
-	processedContent := c.bufferPool.Get().(*bytes.Buffer)
-	processedContent.Reset()
-	defer c.bufferPool.Put(processedContent)
-
-	// If there are layouts, execute them
-	if len(layouts) > 0 {
-		// Get the template from the cache or parse it
-		t, err := c.GetTemplate(layouts)
-		if err != nil {
-			return err
-		}
-
-		// Read the file content into a buffer to pass to the template
-		fileContent := c.bufferPool.Get().(*bytes.Buffer)
-		fileContent.Reset()
-		defer c.bufferPool.Put(fileContent)
-		_, err = fileContent.ReadFrom(file)
-		if err != nil {
-			return err
-		}
-
-		// Execute the layout
-		data := templateData{
-			Global:  c.Config,
-			Content: template.HTML(fileContent.String()),
-		}
-		err = t.ExecuteTemplate(processedContent, filepath.Base(layouts[0]), data)
-		if err != nil {
-			return err
-		}
-	} else {
-		// If there are no layouts, just copy the file content
-		_, err := processedContent.ReadFrom(file)
-		if err != nil {
-			return err
-		}
+	// Get a buffer from the pool for the final processed content
+	processedContent, err := c.ProcessLayouts(layouts, fileContent.Bytes(), nil)
+	if err != nil {
+		return err
 	}
 
 	// Determine the output path
@@ -145,7 +117,7 @@ func (c *Content) ProcessHTML(path string) error {
 	os.MkdirAll(filepath.Dir(outputPath), 0755)
 
 	// Write the processed content to the output file
-	return os.WriteFile(outputPath, processedContent.Bytes(), 0644)
+	return os.WriteFile(outputPath, processedContent, 0644)
 }
 
 func (c *Content) ProcessMarkdown(path string) error {
@@ -184,29 +156,9 @@ func (c *Content) ProcessMarkdown(path string) error {
 	layouts := c.GetLayouts(path)
 
 	// Get a buffer from the pool for the final processed content
-	processedContent := c.bufferPool.Get().(*bytes.Buffer)
-	processedContent.Reset()
-	defer c.bufferPool.Put(processedContent)
-
-	// If there are layouts, execute them
-	if len(layouts) > 0 {
-		// Get the template from the cache or parse it
-		t, err := c.GetTemplate(layouts)
-		if err != nil {
-			return err
-		}
-		// Execute the layout
-		data := templateData{
-			Global:  c.Config,
-			Page:    frontMatter,
-			Content: template.HTML(mdOutput.String()),
-		}
-		if err := t.ExecuteTemplate(processedContent, filepath.Base(layouts[0]), data); err != nil {
-			return err
-		}
-	} else {
-		// If there are no layouts, just use the file content
-		processedContent.Write(mdOutput.Bytes())
+	processedContent, err := c.ProcessLayouts(layouts, mdOutput.Bytes(), frontMatter)
+	if err != nil {
+		return err
 	}
 
 	// Determine the output path
@@ -214,12 +166,44 @@ func (c *Content) ProcessMarkdown(path string) error {
 	os.MkdirAll(filepath.Dir(outputPath), 0755)
 
 	// Write the processed content to the output file
-	return os.WriteFile(outputPath, processedContent.Bytes(), 0644)
+	return os.WriteFile(outputPath, processedContent, 0644)
 }
 
-func (c *Content) GetTemplate(layouts []string) (*template.Template, error) {
-	cacheKey := strings.Join(layouts, ",")
-	if t, ok := c.TemplateCache.Load(cacheKey); ok {
+func (c *Content) ProcessLayouts(layouts []string, content []byte, frontMatter map[string]any) ([]byte, error) {
+	processedContent := content
+
+	for _, layoutPath := range layouts {
+		// Get a buffer from the pool
+		layoutContent := c.bufferPool.Get().(*bytes.Buffer)
+		layoutContent.Reset()
+
+		// Get the template from the cache or parse it
+		t, err := c.GetTemplate(layoutPath)
+		if err != nil {
+			c.bufferPool.Put(layoutContent)
+			return nil, err
+		}
+
+		// Execute the layout
+		data := templateData{
+			Global:  c.Config,
+			Page:    frontMatter,
+			Content: template.HTML(processedContent),
+		}
+
+		if err := t.ExecuteTemplate(layoutContent, filepath.Base(layoutPath), data); err != nil {
+			c.bufferPool.Put(layoutContent)
+			return nil, err
+		}
+		processedContent = layoutContent.Bytes()
+		c.bufferPool.Put(layoutContent)
+	}
+
+	return processedContent, nil
+}
+
+func (c *Content) GetTemplate(layout string) (*template.Template, error) {
+	if t, ok := c.TemplateCache.Load(layout); ok {
 		return t.(*template.Template), nil
 	}
 
@@ -227,9 +211,9 @@ func (c *Content) GetTemplate(layouts []string) (*template.Template, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err = t.Template.ParseFiles(layouts...); err != nil {
+	if _, err = t.Template.ParseFiles(layout); err != nil {
 		return nil, err
 	}
-	c.TemplateCache.Store(cacheKey, t.Template)
+	c.TemplateCache.Store(layout, t.Template)
 	return t.Template, nil
 }
