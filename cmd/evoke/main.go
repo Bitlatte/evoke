@@ -11,10 +11,13 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+var version = "dev"
+
 func main() {
 	cmd := &cli.Command{
-		Name:  "evoke",
-		Usage: "a powerful little static site generator",
+		Name:    "evoke",
+		Usage:   "a powerful little static site generator",
+		Version: version,
 		Commands: []*cli.Command{
 			{
 				Name:  "build",

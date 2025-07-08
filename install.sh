@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # This script downloads and installs the latest release of Evoke for your system.
+# It can also be used to update an existing installation.
 
 set -e
 
@@ -50,6 +51,12 @@ echo "Downloading Evoke ${LATEST_VERSION} for ${OS_TYPE}/${ARCH_TYPE}..."
 curl -L -o evoke.tar.gz "$DOWNLOAD_URL"
 tar -xzf evoke.tar.gz
 rm evoke.tar.gz
+
+# Remove existing installation if it exists
+if [ -f "/usr/local/bin/evoke" ]; then
+    echo "Removing existing Evoke installation..."
+    sudo rm /usr/local/bin/evoke
+fi
 
 # Install the binary
 echo "Installing Evoke to /usr/local/bin..."
