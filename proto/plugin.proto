@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/Bitlatte/evoke/proto";
+
+// The main service that plugins must implement.
+service Plugin {
+  // --- General Build Hooks ---
+
+  // Called once before the entire build process begins.
+  // Useful for setup tasks or pre-build validation.
+  rpc OnPreBuild(PreBuildRequest) returns (PreBuildResponse);
+
+  // Called after the configuration file (evoke.yaml) is loaded.
+  // Allows plugins to read or even modify the configuration.
+  rpc OnConfigLoaded(ConfigLoadedRequest) returns (ConfigLoadedResponse);
+
+  // Called after the 'public' directory has been copied to 'dist'.
+  rpc OnPublicAssetsCopied(PublicAssetsCopiedRequest) returns (PublicAssetsCopiedResponse);
+
+  // --- Content Processing Hooks ---
+
+  // Called for each content file after it's read from disk but before any processing.
+  // Allows modification of the raw file content.
+  rpc OnContentLoaded(ContentFile) returns (ContentFile);
+
+  // Called before the Markdown (or other format) content is rendered to HTML.
+  // A plugin could use this to implement a custom renderer.
+  rpc OnContentRender(ContentFile) returns (ContentFile);
+
+  // Called after content is rendered to HTML but before it's placed in a layout.
+  // Useful for post-processing the core HTML content.
+  rpc OnHTMLRendered(ContentFile) returns (ContentFile);
+
+  // --- Finalization Hooks ---
+
+  // Called once after all content has been processed and written to disk.
+  rpc OnPostBuild(PostBuildRequest) returns (PostBuildResponse);
+}
+
+// Represents a file being processed. This message will be reused for
+// multiple hooks to pass content back and forth.
+message ContentFile {
+  // The relative path of the file from the content directory.
+  string path = 1;
+  // The raw or processed content of the file.
+  bytes content = 2;
+}
+
+// Placeholder request/response messages for other hooks.
+// These can be expanded later with relevant data if needed.
+message PreBuildRequest {}
+message PreBuildResponse {}
+message ConfigLoadedRequest {
+  // The configuration data as a JSON string.
+  string config_json = 1;
+}
+message ConfigLoadedResponse {
+  // The potentially modified configuration data.
+  string config_json = 1;
+}
+message PublicAssetsCopiedRequest {}
+message PublicAssetsCopiedResponse {}
+message PostBuildRequest {}
+message PostBuildResponse {}

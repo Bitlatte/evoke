@@ -76,7 +76,7 @@ func BenchmarkBuild(b *testing.B) {
 	os.Mkdir("content", 0755)
 	os.Mkdir("partials", 0755)
 	os.Mkdir("public", 0755)
-	os.Mkdir("extensions", 0755)
+	os.Mkdir("plugins", 0755)
 
 	// Create dummy files
 	os.WriteFile("evoke.yaml", []byte("title: My Site"), 0644)

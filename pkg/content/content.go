@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/Bitlatte/evoke/pkg/partials"
+	"github.com/Bitlatte/evoke/pkg/plugins"
 	"github.com/yuin/goldmark"
 	"gopkg.in/yaml.v3"
 )
@@ -16,6 +17,7 @@ type Content struct {
 	Partials      *partials.Partials
 	Goldmark      goldmark.Markdown
 	Config        map[string]any
+	Plugins       []plugins.Plugin
 	LayoutCache   sync.Map
 	TemplateCache sync.Map
 	bufferPool    sync.Pool
@@ -27,11 +29,12 @@ type templateData struct {
 	Content template.HTML
 }
 
-func New(config map[string]any, partials *partials.Partials, gm goldmark.Markdown) (*Content, error) {
+func New(config map[string]any, partials *partials.Partials, gm goldmark.Markdown, plugins []plugins.Plugin) (*Content, error) {
 	return &Content{
 		Partials: partials,
 		Config:   config,
 		Goldmark: gm,
+		Plugins:  plugins,
 		bufferPool: sync.Pool{
 			New: func() interface{} {
 				return new(bytes.Buffer)
@@ -98,6 +101,16 @@ func (c *Content) ProcessHTML(path string) error {
 		return err
 	}
 
+	// Run OnContentLoaded hooks
+	for _, p := range c.Plugins {
+		fileContentBytes, err := p.OnContentLoaded(path, fileContent.Bytes())
+		if err != nil {
+			return err
+		}
+		fileContent.Reset()
+		fileContent.Write(fileContentBytes)
+	}
+
 	// Find layouts
 	layouts := c.GetLayouts(path)
 
@@ -105,6 +118,14 @@ func (c *Content) ProcessHTML(path string) error {
 	processedContent, err := c.ProcessLayouts(layouts, fileContent.Bytes(), nil)
 	if err != nil {
 		return err
+	}
+
+	// Run OnHTMLRendered hooks
+	for _, p := range c.Plugins {
+		processedContent, err = p.OnHTMLRendered(path, processedContent)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Determine the output path
@@ -133,10 +154,28 @@ func (c *Content) ProcessMarkdown(path string) error {
 		return err
 	}
 
+	// Run OnContentLoaded hooks
+	for _, p := range c.Plugins {
+		bodyContentBytes, err := p.OnContentLoaded(path, bodyContent.Bytes())
+		if err != nil {
+			return err
+		}
+		bodyContent.Reset()
+		bodyContent.Write(bodyContentBytes)
+	}
+
 	// Parse front matter
 	frontMatter, body, err := c.ParseFrontMatter(bodyContent.Bytes())
 	if err != nil {
 		return err
+	}
+
+	// Run OnContentRender hooks
+	for _, p := range c.Plugins {
+		body, err = p.OnContentRender(path, body)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Convert Markdown to HTML
@@ -156,6 +195,14 @@ func (c *Content) ProcessMarkdown(path string) error {
 		return err
 	}
 
+	// Run OnHTMLRendered hooks
+	for _, p := range c.Plugins {
+		processedContent, err = p.OnHTMLRendered(path, processedContent)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Determine the output path
 	outputPath := filepath.Join("dist", path[len("content"):len(path)-3]+".html")
 	os.MkdirAll(filepath.Dir(outputPath), 0755)
@@ -171,11 +218,11 @@ func (c *Content) ProcessLayouts(layouts []string, content []byte, frontMatter m
 		// Get a buffer from the pool
 		layoutContent := c.bufferPool.Get().(*bytes.Buffer)
 		layoutContent.Reset()
+		defer c.bufferPool.Put(layoutContent)
 
 		// Get the template from the cache or parse it
 		t, err := c.GetTemplate(layoutPath)
 		if err != nil {
-			c.bufferPool.Put(layoutContent)
 			return nil, err
 		}
 
@@ -187,11 +234,9 @@ func (c *Content) ProcessLayouts(layouts []string, content []byte, frontMatter m
 		}
 
 		if err := t.ExecuteTemplate(layoutContent, filepath.Base(layoutPath), data); err != nil {
-			c.bufferPool.Put(layoutContent)
 			return nil, err
 		}
 		processedContent = layoutContent.Bytes()
-		c.bufferPool.Put(layoutContent)
 	}
 
 	return processedContent, nil

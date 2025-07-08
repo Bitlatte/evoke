@@ -1,6 +1,7 @@
 package build
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,23 +10,48 @@ import (
 
 	"github.com/Bitlatte/evoke/pkg/config"
 	"github.com/Bitlatte/evoke/pkg/content"
-	"github.com/Bitlatte/evoke/pkg/extensions"
 	"github.com/Bitlatte/evoke/pkg/partials"
+	"github.com/Bitlatte/evoke/pkg/plugins"
 	"github.com/Bitlatte/evoke/pkg/util"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/renderer/html"
 )
 
-// LoadExtensions loads the build extensions.
-func LoadExtensions() ([]extensions.Extension, error) {
-	return extensions.LoadBuildExtensions()
+// LoadPlugins loads the build plugins.
+func LoadPlugins() ([]plugins.Plugin, error) {
+	if _, err := os.Stat("plugins"); os.IsNotExist(err) {
+		return nil, nil
+	}
+	return plugins.LoadPlugins()
 }
 
-// RunBeforeBuildHooks runs the BeforeBuild hooks for the given extensions.
-func RunBeforeBuildHooks(loadedExtensions []extensions.Extension) error {
-	for _, ext := range loadedExtensions {
-		if err := ext.BeforeBuild(); err != nil {
-			return fmt.Errorf("error running BeforeBuild hook: %w", err)
+// RunOnPreBuildHooks runs the OnPreBuild hooks for the given plugins.
+func RunOnPreBuildHooks(loadedPlugins []plugins.Plugin) error {
+	for _, p := range loadedPlugins {
+		if err := p.OnPreBuild(); err != nil {
+			return fmt.Errorf("error running OnPreBuild hook: %w", err)
+		}
+	}
+	return nil
+}
+
+// RunOnConfigLoadedHooks runs the OnConfigLoaded hooks for the given plugins.
+func RunOnConfigLoadedHooks(loadedPlugins []plugins.Plugin, config []byte) ([]byte, error) {
+	for _, p := range loadedPlugins {
+		var err error
+		config, err = p.OnConfigLoaded(config)
+		if err != nil {
+			return nil, fmt.Errorf("error running OnConfigLoaded hook: %w", err)
+		}
+	}
+	return config, nil
+}
+
+// RunOnPublicAssetsCopiedHooks runs the OnPublicAssetsCopied hooks for the given plugins.
+func RunOnPublicAssetsCopiedHooks(loadedPlugins []plugins.Plugin) error {
+	for _, p := range loadedPlugins {
+		if err := p.OnPublicAssetsCopied(); err != nil {
+			return fmt.Errorf("error running OnPublicAssetsCopied hook: %w", err)
 		}
 	}
 	return nil
@@ -60,13 +86,13 @@ func LoadPartials() (*partials.Partials, error) {
 }
 
 // ProcessContent processes the content.
-func ProcessContent(loadedConfig map[string]interface{}, t *partials.Partials) error {
+func ProcessContent(loadedConfig map[string]interface{}, t *partials.Partials, loadedPlugins []plugins.Plugin) error {
 	gm := goldmark.New(
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),
 		),
 	)
-	contentProcessor, err := content.New(loadedConfig, t, gm)
+	contentProcessor, err := content.New(loadedConfig, t, gm, loadedPlugins)
 	if err != nil {
 		return fmt.Errorf("error creating content processor: %w", err)
 	}
@@ -132,25 +158,25 @@ func ProcessContentWithProcessor(contentProcessor *content.Content) error {
 	return nil
 }
 
-// RunAfterBuildHooks runs the AfterBuild hooks for the given extensions.
-func RunAfterBuildHooks(loadedExtensions []extensions.Extension) error {
-	for _, ext := range loadedExtensions {
-		if err := ext.AfterBuild(); err != nil {
-			return fmt.Errorf("error running AfterBuild hook: %w", err)
+// RunOnPostBuildHooks runs the OnPostBuild hooks for the given plugins.
+func RunOnPostBuildHooks(loadedPlugins []plugins.Plugin) error {
+	for _, p := range loadedPlugins {
+		if err := p.OnPostBuild(); err != nil {
+			return fmt.Errorf("error running OnPostBuild hook: %w", err)
 		}
 	}
 	return nil
 }
 
 func Build() error {
-	// Load extensions
-	loadedExtensions, err := LoadExtensions()
+	// Load plugins
+	loadedPlugins, err := LoadPlugins()
 	if err != nil {
-		return fmt.Errorf("error loading extensions: %w", err)
+		return fmt.Errorf("error loading plugins: %w", err)
 	}
 
-	// Run BeforeBuild hooks
-	if err := RunBeforeBuildHooks(loadedExtensions); err != nil {
+	// Run OnPreBuild hooks
+	if err := RunOnPreBuildHooks(loadedPlugins); err != nil {
 		return err
 	}
 
@@ -164,10 +190,28 @@ func Build() error {
 		return err
 	}
 
+	// Run OnPublicAssetsCopied hooks
+	if err := RunOnPublicAssetsCopiedHooks(loadedPlugins); err != nil {
+		return err
+	}
+
 	// Process content
 	loadedConfig, err := LoadConfiguration()
 	if err != nil {
 		return fmt.Errorf("error loading config: %w", err)
+	}
+
+	// Run OnConfigLoaded hooks
+	configBytes, err := json.Marshal(loadedConfig)
+	if err != nil {
+		return fmt.Errorf("error marshalling config: %w", err)
+	}
+	configBytes, err = RunOnConfigLoadedHooks(loadedPlugins, configBytes)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(configBytes, &loadedConfig); err != nil {
+		return fmt.Errorf("error unmarshalling config: %w", err)
 	}
 
 	// Load partials
@@ -176,12 +220,12 @@ func Build() error {
 		return fmt.Errorf("error loading partials: %w", err)
 	}
 
-	if err := ProcessContent(loadedConfig, t); err != nil {
+	if err := ProcessContent(loadedConfig, t, loadedPlugins); err != nil {
 		return err
 	}
 
-	// Run AfterBuild hooks
-	if err := RunAfterBuildHooks(loadedExtensions); err != nil {
+	// Run OnPostBuild hooks
+	if err := RunOnPostBuildHooks(loadedPlugins); err != nil {
 		return err
 	}
 
