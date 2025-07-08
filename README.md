@@ -21,7 +21,23 @@ There are more things we could mention but I think its best to let you experienc
 
 ### Installation
 
-To get started, you'll need to have Go installed on your system. You can then install Evoke using the following command:
+You can install Evoke in one of the following ways:
+
+**1. Installer Script (Recommended):**
+
+You can use the following command to download and install the latest version of Evoke for your system:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Bitlatte/evoke/main/install/install.sh | sh
+```
+
+**2. From a Release:**
+
+Download the pre-compiled binary for your operating system from the [latest release](https://github.com/Bitlatte/evoke/releases/latest) on GitHub. Unzip the archive and place the `evoke` binary in a directory that is in your system's `PATH`.
+
+**3. From Source:**
+
+If you have Go installed, you can also install Evoke from source using the `go install` command:
 
 ```bash
 go install github.com/Bitlatte/evoke/cmd/evoke@latest
