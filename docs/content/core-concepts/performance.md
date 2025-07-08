@@ -1,34 +1,35 @@
 # Performance
 
-Evoke is designed to be fast and efficient, allowing you to build your site quickly without consuming excessive system resources. This is achieved through a combination of a lightweight design, efficient algorithms, and the power of the Go programming language.
+Evoke is engineered from the ground up for speed and efficiency, ensuring that your site builds quickly without monopolizing system resources. This is accomplished through a combination of a lightweight architecture, efficient algorithms, and the inherent performance of the Go programming language.
 
-## Why Go?
+## The Go Advantage
 
-Evoke is written in Go, a language renowned for its performance and concurrency features. This choice allows Evoke to:
+Evoke is written in Go, a language celebrated for its performance and concurrency. This choice provides several key advantages:
 
-- **Compile to a single binary:** This means no external dependencies are needed to run Evoke, making it fast to install and execute.
-- **Excellent concurrency support:** Go's built-in goroutines and channels make it easy to write highly concurrent code, which is key to Evoke's parallel processing capabilities.
+-   **Single Binary Deployment:** Evoke compiles to a single, self-contained binary. This means there are no external dependencies to install or manage, making it incredibly fast to deploy and execute.
+-   **Built-in Concurrency:** Go's goroutines and channels provide a powerful and efficient model for concurrency. Evoke leverages this to parallelize tasks and maximize the use of available CPU cores.
 
-## Key Performance Features
+## Core Performance Features
 
-### Build Speed
+### High-Throughput Build Process
 
-Evoke's build process is highly optimized for speed. On a modern machine, a typical site builds in a fraction of a second. This is achieved through several techniques:
+Evoke's build process is designed for maximum throughput. Here are some of the key features that make it so fast:
 
--   **Parallel Processing:** Evoke processes content files in parallel, taking full advantage of multi-core processors to speed up the build.
--   **Efficient Caching:** Layouts and templates are cached in memory after they are first loaded, avoiding redundant file I/O and parsing.
+-   **Parallel File Processing:** Evoke processes your content files in parallel, taking full advantage of multi-core processors to dramatically reduce build times. It creates a pool of workers, with one worker per CPU core, to ensure that your site is built as quickly as possible.
+-   **In-Memory Caching:** Layouts and templates are parsed once and then cached in memory. This avoids redundant file I/O and parsing operations, resulting in a significant speed boost. The cache is implemented using a `sync.Map`, which is optimized for concurrent access.
+-   **Efficient Memory Management:** Evoke is designed to be light on memory usage. We use a `sync.Pool` to reuse memory buffers for file I/O and content processing. This reduces the number of memory allocations and the pressure on the garbage collector, leading to faster and more consistent build times.
+-   **Singleton Parsers:** The Goldmark Markdown parser is initialized only once and then reused for all Markdown files. This avoids the significant overhead of creating a new parser for each file.
 
-### Memory Usage
+### The Plugin System and Performance
 
-We have put significant effort into optimizing Evoke's memory usage to ensure it runs smoothly even on systems with limited RAM. Key memory optimizations include:
+Evoke's plugin system is designed to be flexible and powerful, but it's important to be aware of the performance implications of the plugins you use. While the core of Evoke is highly optimized, a poorly written plugin can slow down your build.
 
--   **Buffer Re-use with `sync.Pool`:** Evoke uses `sync.Pool` to reuse memory buffers for file copying and content processing. This dramatically reduces the number of memory allocations and the pressure on the garbage collector, which in turn leads to faster build times.
--   **Singleton Parsers:** The Markdown parser (Goldmark) is initialized only once and then reused throughout the build process. This avoids the significant memory overhead of creating new parsers for each file.
+Here are some things to keep in mind when writing or using plugins:
 
-### Benchmark Results
-
-Our internal benchmarks show that these optimizations have resulted in a **~30% reduction in total memory allocations** during a typical build, with a corresponding **~18% improvement in build speed**.
+-   **Plugin Hooks:** Plugins can "hook" into various stages of the build process. Be mindful of the hooks you use and the work you do in them. For example, a heavy computation in the `OnContentLoaded` hook will be executed for every single file, which can have a significant impact on build times.
+-   **Memory Allocations:** Be mindful of memory allocations in your plugins. If you need to work with large amounts of data, consider using a `sync.Pool` to reuse buffers, just like Evoke does internally.
+-   **Caching:** If your plugin performs expensive operations, consider implementing your own caching layer to avoid redundant work.
 
 ## Summary
 
-Evoke's focus on performance means you can spend less time waiting for your site to build and more time creating content. We are continuously monitoring and improving Evoke's performance to ensure it remains one of the fastest and most efficient static site generators available.
+Evoke's commitment to performance means you can iterate on your site more quickly and spend less time waiting for builds. We are continuously working to make Evoke even faster and more efficient, and we encourage our community to adopt performance-conscious practices when developing plugins.
