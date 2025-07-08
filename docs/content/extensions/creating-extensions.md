@@ -1,12 +1,79 @@
 # Creating Extensions
 
-Evoke's extension system allows you to hook into the build process, add new commands to the CLI, or both.
+This guide will walk you through the process of creating your first Evoke extension. We'll create a simple extension that adds a new CLI command to your project.
+
+## Prerequisites
+
+Before you begin, make sure you have Go installed on your system.
+
+## Step 1: Create a New Directory
+
+First, create a new directory for your extension inside your project's `extensions` directory. For this example, we'll create a `hello` extension.
+
+```bash
+mkdir -p extensions/hello
+```
+
+## Step 2: Create the Extension File
+
+Inside the `extensions/hello` directory, create a new file named `main.go`. This file will contain the code for your extension.
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/urfave/cli/v3"
+)
+
+// Commands is a slice of *cli.Command pointers that will be added to the Evoke CLI.
+var Commands = []*cli.Command{
+	{
+		Name:  "hello",
+		Usage: "prints a friendly greeting",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			fmt.Println("Hello from my first extension!")
+			return nil
+		},
+	},
+}
+
+func main() {}
+```
+
+In this example, we're creating a new command called `hello` that simply prints a message to the console.
+
+## Step 3: Build the Extension
+
+To build the extension, you'll need to compile it as a Go plugin. Run the following command from your project's root directory:
+
+```bash
+go build -buildmode=plugin -o extensions/hello.so extensions/hello/main.go
+```
+
+This will create a new file named `hello.so` in your `extensions` directory. This is the compiled plugin that Evoke will load.
+
+## Step 4: Run the New Command
+
+Now that your extension is built, you can run the new `hello` command:
+
+```bash
+evoke hello
+```
+
+You should see the following output:
+
+```
+Hello from my first extension!
+```
 
 ## Build Process Hooks
 
-To create an extension that hooks into the build process, you'll need to create a Go plugin that exports a variable named `EvokeExtension`. This variable must implement the `extensions.Extension` interface, which has two methods: `BeforeBuild` and `AfterBuild`.
+You can also create extensions that hook into the build process. To do this, your extension will need to export a variable named `EvokeExtension` that implements the `extensions.Extension` interface.
 
-Here's an example of a simple extension that prints a message before and after the build:
+Here's an example of an extension that prints a message before and after the build:
 
 ```go
 package main
@@ -26,42 +93,6 @@ func (e *MyExtension) AfterBuild() error {
 }
 
 var EvokeExtension = &MyExtension{}
-
-func main() {}
-```
-
-## CLI Commands
-
-You can also create extensions that add new commands to the Evoke CLI. To do this, your extension will need to export a variable named `Commands` that is a slice of `*cli.Command` pointers.
-
-Here's an example of an extension that adds a `serve` command:
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"log"
-	"net/http"
-
-	"github.com/urfave/cli/v3"
-)
-
-var Commands = []*cli.Command{
-	{
-		Name:  "serve",
-		Usage: "serve the dist directory",
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			fs := http.FileServer(http.Dir("./dist"))
-			http.Handle("/", fs)
-
-			fmt.Println("Serving on http://localhost:8080")
-			log.Fatal(http.ListenAndServe(":8080", nil))
-			return nil
-		},
-	},
-}
 
 func main() {}
 ```

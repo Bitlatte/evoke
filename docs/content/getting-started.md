@@ -4,73 +4,74 @@ title: "Getting Started with Evoke"
 
 # Getting Started with Evoke
 
-Welcome to Evoke! This guide will help you get up and running with your new static site generator.
+Welcome to Evoke! This guide will walk you through installing Evoke and creating your first website.
 
 ## Installation
 
-To get started, you'll need to have Go installed on your system. You can then install Evoke using the following command:
+First, ensure you have Go installed on your system. Then, you can install Evoke with the following command:
 
 ```bash
 go install github.com/Bitlatte/evoke/cmd/evoke@latest
 ```
 
-## Creating Your First Site
+## Your First Project
 
-1.  **Create a new directory for your site:**
+Evoke is designed to work with minimal setup. Here's how to create a basic site:
 
-    ```bash
-    mkdir my-site
-    cd my-site
-    ```
-
-2.  **Create the required directories:**
+1.  **Create a Project Directory:**
 
     ```bash
-    mkdir content public partials extensions
+    mkdir my-awesome-site
+    cd my-awesome-site
     ```
 
-3.  **Create a configuration file:**
+2.  **Add a Content Directory:**
 
-    Create a file named `evoke.yaml` in the root of your project with the following content:
+    This is the only directory you need to get started.
 
-    ```yaml
-    siteName: "My Awesome Site"
+    ```bash
+    mkdir content
     ```
 
-4.  **Create a layout file:**
+3.  **Create Your First Page:**
 
-    Create a file named `_layout.html` in the `content` directory with the following content:
-
-    ```html
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{{ .siteName }}</title>
-      </head>
-      <body>
-        {{ .content }}
-      </body>
-    </html>
-    ```
-
-5.  **Create your first page:**
-
-    Create a file named `index.md` in the `content` directory with the following content:
+    Create a file named `index.md` inside the `content` directory:
 
     ```markdown
     # Welcome to My Awesome Site!
 
-    This is my first page.
+    This is my first page. I can use **Markdown** to format my text.
     ```
 
-6.  **Build your site:**
+4.  **Build Your Site:**
 
-    Run the following command to build your site:
+    Run the `evoke build` command from your project's root directory:
 
     ```bash
     evoke build
     ```
 
-    This will generate your static site in the `dist` directory. You can now open the `dist/index.html` file in your browser to see your new site.
+    Evoke will generate your static site in a new `dist` directory. Open `dist/index.html` in your browser to see the result.
+
+## Project Structure Explained
+
+As your project grows, you can add more directories to organize your files:
+
+```
+.
+├── content/      # Your site's pages (Markdown or HTML)
+├── partials/     # Reusable HTML snippets
+├── public/       # Static assets (CSS, images, etc.)
+├── extensions/   # Custom Evoke extensions
+└── evoke.yaml    # Optional configuration file
+```
+
+- **`content/`**: This is where all your website's pages live. Evoke processes these files and converts them to HTML.
+- **`partials/`**: This directory holds reusable HTML snippets that you can include in your pages, like headers or footers.
+- **`public/`**: Any files in this directory (e.g., CSS, JavaScript, images) are copied directly to the `dist` folder without changes.
+- **`extensions/`**: You can add custom Go code here to extend Evoke's functionality.
+- **`evoke.yaml`**: This optional file allows you to customize your site's settings.
+
+## What's Next?
+
+You've successfully built your first site with Evoke! To learn more about what you can do, check out the **[Core Concepts](./core-concepts/build-process.md)**.
