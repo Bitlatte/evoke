@@ -14,6 +14,7 @@ import (
 	"github.com/Bitlatte/evoke/pkg/plugins"
 	"github.com/Bitlatte/evoke/pkg/util"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
 )
 
@@ -58,14 +59,14 @@ func RunOnPublicAssetsCopiedHooks(loadedPlugins []plugins.Plugin) error {
 }
 
 // CreateOutputDirectory creates the output directory.
-func CreateOutputDirectory() error {
-	return os.MkdirAll("dist", 0755)
+func CreateOutputDirectory(outputDir string) error {
+	return os.MkdirAll(outputDir, 0755)
 }
 
 // CopyPublicDirectory copies the public directory to the output directory.
-func CopyPublicDirectory() error {
+func CopyPublicDirectory(outputDir string) error {
 	if _, err := os.Stat("public"); !os.IsNotExist(err) {
-		if err := util.CopyDirectory("public", "dist"); err != nil {
+		if err := util.CopyDirectory("public", outputDir); err != nil {
 			return fmt.Errorf("error copying public directory: %w", err)
 		}
 	}
@@ -82,17 +83,18 @@ func LoadPartials() (*partials.Partials, error) {
 	if _, err := os.Stat("partials"); !os.IsNotExist(err) {
 		return partials.LoadPartials()
 	}
-	return nil, nil
+	return &partials.Partials{}, nil
 }
 
 // ProcessContent processes the content.
-func ProcessContent(loadedConfig map[string]interface{}, t *partials.Partials, loadedPlugins []plugins.Plugin) error {
+func ProcessContent(outputDir string, loadedConfig map[string]interface{}, t *partials.Partials, loadedPlugins []plugins.Plugin) error {
 	gm := goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),
 		),
 	)
-	contentProcessor, err := content.New(loadedConfig, t, gm, loadedPlugins)
+	contentProcessor, err := content.New(outputDir, loadedConfig, t, gm, loadedPlugins)
 	if err != nil {
 		return fmt.Errorf("error creating content processor: %w", err)
 	}
@@ -168,7 +170,7 @@ func RunOnPostBuildHooks(loadedPlugins []plugins.Plugin) error {
 	return nil
 }
 
-func Build() error {
+func Build(outputDir string) error {
 	// Load plugins
 	loadedPlugins, err := LoadPlugins()
 	if err != nil {
@@ -181,12 +183,12 @@ func Build() error {
 	}
 
 	// Create the output directory
-	if err := CreateOutputDirectory(); err != nil {
+	if err := CreateOutputDirectory(outputDir); err != nil {
 		return fmt.Errorf("error creating output directory: %w", err)
 	}
 
 	// Copy the public directory
-	if err := CopyPublicDirectory(); err != nil {
+	if err := CopyPublicDirectory(outputDir); err != nil {
 		return err
 	}
 
@@ -220,7 +222,7 @@ func Build() error {
 		return fmt.Errorf("error loading partials: %w", err)
 	}
 
-	if err := ProcessContent(loadedConfig, t, loadedPlugins); err != nil {
+	if err := ProcessContent(outputDir, loadedConfig, t, loadedPlugins); err != nil {
 		return err
 	}
 

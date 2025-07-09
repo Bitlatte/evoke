@@ -20,6 +20,7 @@ type Content struct {
 	Plugins       []plugins.Plugin
 	LayoutCache   sync.Map
 	TemplateCache sync.Map
+	OutputDir     string
 	bufferPool    sync.Pool
 }
 
@@ -29,12 +30,13 @@ type templateData struct {
 	Content template.HTML
 }
 
-func New(config map[string]any, partials *partials.Partials, gm goldmark.Markdown, plugins []plugins.Plugin) (*Content, error) {
+func New(outputDir string, config map[string]any, partials *partials.Partials, gm goldmark.Markdown, plugins []plugins.Plugin) (*Content, error) {
 	return &Content{
-		Partials: partials,
-		Config:   config,
-		Goldmark: gm,
-		Plugins:  plugins,
+		Partials:  partials,
+		Config:    config,
+		Goldmark:  gm,
+		Plugins:   plugins,
+		OutputDir: outputDir,
 		bufferPool: sync.Pool{
 			New: func() interface{} {
 				return new(bytes.Buffer)
@@ -129,7 +131,7 @@ func (c *Content) ProcessHTML(path string) error {
 	}
 
 	// Determine the output path
-	outputPath := filepath.Join("dist", path[len("content"):])
+	outputPath := filepath.Join(c.OutputDir, path[len("content"):])
 	os.MkdirAll(filepath.Dir(outputPath), 0755)
 
 	// Write the processed content to the output file
@@ -204,7 +206,7 @@ func (c *Content) ProcessMarkdown(path string) error {
 	}
 
 	// Determine the output path
-	outputPath := filepath.Join("dist", path[len("content"):len(path)-3]+".html")
+	outputPath := filepath.Join(c.OutputDir, path[len("content"):len(path)-3]+".html")
 	os.MkdirAll(filepath.Dir(outputPath), 0755)
 
 	// Write the processed content to the output file

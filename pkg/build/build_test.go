@@ -36,7 +36,7 @@ func TestBuild(t *testing.T) {
 	os.WriteFile("public/style.css", []byte("body { color: red; }"), 0644)
 
 	// Run the build
-	err = build.Build()
+	err = build.Build("dist")
 	assert.NoError(t, err)
 
 	// Assert the results
@@ -97,7 +97,7 @@ func BenchmarkBuild(b *testing.B) {
 
 	// Run the build
 	for i := 0; i < b.N; i++ {
-		err = build.Build()
+		err = build.Build("dist")
 		if err != nil {
 			b.Fatal(err)
 		}

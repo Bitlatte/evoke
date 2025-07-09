@@ -32,7 +32,7 @@ func TestProcessHTML_WithLayout(t *testing.T) {
 			html.WithUnsafe(),
 		),
 	)
-	contentProcessor, err := content.New(config, loadedPartials, gm, nil)
+	contentProcessor, err := content.New(distDir, config, loadedPartials, gm, nil)
 	assert.NoError(t, err)
 
 	// Act
@@ -74,7 +74,7 @@ func TestProcessMarkdown_WithLayout(t *testing.T) {
 			html.WithUnsafe(),
 		),
 	)
-	contentProcessor, err := content.New(config, loadedPartials, gm, nil)
+	contentProcessor, err := content.New(distDir, config, loadedPartials, gm, nil)
 	assert.NoError(t, err)
 
 	// Act
@@ -128,7 +128,7 @@ func BenchmarkProcessHTML(b *testing.B) {
 					html.WithUnsafe(),
 				),
 			)
-			contentProcessor, err := content.New(config, loadedPartials, gm, nil)
+			contentProcessor, err := content.New(distDir, config, loadedPartials, gm, nil)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -179,7 +179,7 @@ func BenchmarkProcessMarkdown(b *testing.B) {
 					html.WithUnsafe(),
 				),
 			)
-			contentProcessor, err := content.New(config, loadedPartials, gm, nil)
+			contentProcessor, err := content.New(distDir, config, loadedPartials, gm, nil)
 			if err != nil {
 				b.Fatal(err)
 			}

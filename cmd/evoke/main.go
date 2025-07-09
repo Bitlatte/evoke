@@ -23,7 +23,7 @@ func main() {
 				Name:  "build",
 				Usage: "builds your content into static HTML",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return build.Build()
+					return build.Build("dist")
 				},
 			},
 			{

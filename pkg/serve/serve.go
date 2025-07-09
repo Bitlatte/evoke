@@ -1,21 +1,37 @@
 package serve
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/Bitlatte/evoke/pkg/build"
 	"github.com/fsnotify/fsnotify"
+	"github.com/gorilla/websocket"
+)
+
+var (
+	buildMutex    sync.Mutex
+	memoryFS      = make(map[string][]byte)
+	memoryFSMutex sync.RWMutex
+	upgrader      = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+	clients   = make(map[*websocket.Conn]bool)
+	clientsMu sync.Mutex
 )
 
 // Serve starts a web server and watches for changes.
 func Serve(port int) error {
-	if err := build.Build(); err != nil {
+	if err := buildAndCache(); err != nil {
 		return fmt.Errorf("error building site: %w", err)
 	}
 
@@ -63,37 +79,133 @@ func watchRecursive(watcher *fsnotify.Watcher, path string) error {
 func startServer(port int) {
 	portStr := strconv.Itoa(port)
 	log.Printf("Starting server on :%s", portStr)
-	http.Handle("/", http.FileServer(http.Dir("dist")))
+	http.HandleFunc("/ws", wsHandler)
+	http.HandleFunc("/", memoryFileServer)
 	if err := http.ListenAndServe(":"+portStr, nil); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
 
-func watchFiles(watcher *fsnotify.Watcher) {
-	var lastEventTime time.Time
-	var lastEventName string
+func wsHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	clientsMu.Lock()
+	clients[conn] = true
+	clientsMu.Unlock()
+}
 
+func broadcast(message []byte) {
+	clientsMu.Lock()
+	defer clientsMu.Unlock()
+	for client := range clients {
+		if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
+			log.Println(err)
+			client.Close()
+			delete(clients, client)
+		}
+	}
+}
+
+func memoryFileServer(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	if path == "/" {
+		path = "/index.html"
+	}
+	path = strings.TrimPrefix(path, "/")
+
+	memoryFSMutex.RLock()
+	content, ok := memoryFS[path]
+	memoryFSMutex.RUnlock()
+
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Inject reload script
+	if strings.HasSuffix(path, ".html") {
+		content = bytes.Replace(content, []byte("</body>"), []byte("<script>var conn=new WebSocket(\"ws://\"+location.host+\"/ws\");conn.onmessage=function(e){if(e.data===\"reload\"){location.reload()}};</script></body>"), 1)
+	}
+
+	w.Header().Set("Content-Type", http.DetectContentType(content))
+	w.Write(content)
+}
+
+func buildAndCache() error {
+	buildMutex.Lock()
+	defer buildMutex.Unlock()
+
+	tempDir, err := os.MkdirTemp("", "evoke-build-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tempDir)
+
+	if err := build.Build(tempDir); err != nil {
+		return err
+	}
+
+	memoryFSMutex.Lock()
+	defer memoryFSMutex.Unlock()
+	memoryFS = make(map[string][]byte)
+
+	return filepath.Walk(tempDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			relPath, err := filepath.Rel(tempDir, path)
+			if err != nil {
+				return err
+			}
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			memoryFS[relPath] = content
+		}
+		return nil
+	})
+}
+
+func watchFiles(watcher *fsnotify.Watcher) {
+	var timer *time.Timer
+	var lastBuildTime time.Time
 	for {
 		select {
 		case event, ok := <-watcher.Events:
 			if !ok {
 				return
 			}
-			// Debounce events
-			if event.Name == lastEventName && time.Since(lastEventTime) < 2*time.Second {
+
+			isRelevantEvent := event.Op&fsnotify.Write == fsnotify.Write ||
+				event.Op&fsnotify.Create == fsnotify.Create ||
+				event.Op&fsnotify.Remove == fsnotify.Remove ||
+				event.Op&fsnotify.Rename == fsnotify.Rename
+
+			if !isRelevantEvent {
 				continue
 			}
-			lastEventName = event.Name
-			lastEventTime = time.Now()
 
-			log.Printf("Change detected in %s, rebuilding...", event.Name)
-			if err := build.Build(); err != nil {
-				log.Printf("Error rebuilding site: %v", err)
-			} else {
-				log.Println("Site rebuilt successfully.")
-				// A simple restart is not possible, so we just rebuild.
-				// A more advanced implementation would restart the server process.
+			if time.Since(lastBuildTime) < 2*time.Second {
+				continue
 			}
+			if timer != nil {
+				timer.Stop()
+			}
+			timer = time.AfterFunc(1*time.Second, func() {
+				log.Printf("Change detected in %s, rebuilding...", event.Name)
+				if err := buildAndCache(); err != nil {
+					log.Printf("Error rebuilding site: %v", err)
+				} else {
+					log.Println("Site rebuilt successfully.")
+					lastBuildTime = time.Now()
+					broadcast([]byte("reload"))
+				}
+			})
 		case err, ok := <-watcher.Errors:
 			if !ok {
 				return

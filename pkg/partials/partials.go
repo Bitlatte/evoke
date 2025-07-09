@@ -42,6 +42,9 @@ func LoadPartials() (*Partials, error) {
 }
 
 func (p *Partials) Clone() (*Partials, error) {
+	if p.Template == nil {
+		return &Partials{template.New("")}, nil
+	}
 	cloned, err := p.Template.Clone()
 	if err != nil {
 		return nil, err
