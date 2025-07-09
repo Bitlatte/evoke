@@ -4,6 +4,7 @@ go 1.24.4
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.6.0
 	github.com/stretchr/testify v1.10.0
@@ -18,7 +19,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.10 // indirect
