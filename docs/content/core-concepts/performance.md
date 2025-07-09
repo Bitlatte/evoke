@@ -42,60 +42,61 @@ The following metrics are used:
 
 ### Build (`pkg/build`)
 
-This benchmark measures the time it takes to run the entire build process from start to finish. This includes loading plugins, copying public assets, processing content, and running all associated hooks. It provides a holistic view of the site generation time.
+This benchmark measures the time it takes to build a site with 100 pages from scratch. This includes loading plugins, copying public assets, processing content, and running all associated hooks. It provides a holistic view of the site generation time.
 
-| Benchmark      | Iterations | Time/op (ns/op) | Memory/op (B/op) | Allocations/op |
-| -------------- | ---------- | --------------- | ---------------- | -------------- |
-| BenchmarkBuild | 3003       | 380991          | 100121           | 489            |
+| Benchmark      | Time/op (ms) | Memory/op (MB) | Allocations/op |
+| -------------- | ------------ | -------------- | -------------- |
+| BenchmarkBuild | 18.62        | 3.46           | 24607          |
 
-### Content (`pkg/content`)
+### Pipelines (`pkg/pipelines`)
 
-These benchmarks measure the time it takes to process different sizes of HTML and Markdown files. The "small," "medium," and "large" variants correspond to files of approximately 1KB, 10KB, and 100KB, respectively. This helps to understand how Evoke's performance scales with content size.
+These benchmarks measure the time it takes for each content pipeline to process a realistic piece of content.
 
-| Benchmark                       | Iterations | Time/op (ns/op) | Memory/op (B/op) | Allocations/op |
-| ------------------------------- | ---------- | --------------- | ---------------- | -------------- |
-| BenchmarkProcessHTML/Small      | 21298      | 56975           | 848              | 22             |
-| BenchmarkProcessHTML/Medium     | 22236      | 64018           | 912              | 22             |
-| BenchmarkProcessHTML/Large      | 22710      | 61271           | 976              | 22             |
-| BenchmarkProcessMarkdown/Small  | 22510      | 60711           | 6162             | 40             |
-| BenchmarkProcessMarkdown/Medium | 19141      | 60015           | 6684             | 44             |
-| BenchmarkProcessMarkdown/Large  | 19557      | 59026           | 7180             | 48             |
+| Benchmark                 | Time/op (ms) | Memory/op (KB) | Allocations/op | Notes                               |
+| ------------------------- | ------------ | -------------- | -------------- | ----------------------------------- |
+| BenchmarkMarkdownPipeline | 0.21         | 111.52         | 437            | Processes a 100-paragraph MD file   |
+| BenchmarkHTMLPipeline     | 0.06         | 32.72          | 16             | Processes a 100-paragraph HTML file |
+| BenchmarkCopyPipeline     | 0.61         | 1049.01        | 10             | Processes a 1MB file                |
 
 ### Partials (`pkg/partials`)
 
-This benchmark measures the time it takes to load and parse all partial templates from the `partials` directory. These templates are cached in memory after the first load, so this benchmark reflects the initial setup cost.
+This benchmark measures the time it takes to load and parse 50 partial templates from the `partials` directory.
 
-| Benchmark             | Iterations | Time/op (ns/op) | Memory/op (B/op) | Allocations/op |
-| --------------------- | ---------- | --------------- | ---------------- | -------------- |
-| BenchmarkLoadPartials | 29602      | 40587           | 9913             | 91             |
+| Benchmark             | Time/op (ms) | Memory/op (KB) | Allocations/op |
+| --------------------- | ------------ | -------------- | -------------- |
+| BenchmarkLoadPartials | 1.11         | 246.04         | 2148           |
 
 ### Plugins (`pkg/plugins`)
 
-This benchmark measures the overhead of the plugin system itself, without any specific plugin logic. It helps to quantify the baseline cost of having the plugin system enabled.
+This benchmark measures the overhead of the plugin system by sending a 10KB payload over gRPC.
 
-| Benchmark       | Iterations | Time/op (ns/op) | Memory/op (B/op) | Allocations/op |
-| --------------- | ---------- | --------------- | ---------------- | -------------- |
-| BenchmarkPlugin | 20985      | 63041           | 9511             | 179            |
+| Benchmark       | Time/op (ms) | Memory/op (KB) | Allocations/op |
+| --------------- | ------------ | -------------- | -------------- |
+| BenchmarkPlugin | 0.10         | 76.30          | 187            |
 
 ### Util (`pkg/util`)
 
-These benchmarks measure the performance of common file system operations, such as copying single files and entire directories. This is crucial for understanding the performance of asset handling.
+These benchmarks measure the performance of common file system operations.
 
-| Benchmark                | Iterations | Time/op (ns/op) | Memory/op (B/op) | Allocations/op |
-| ------------------------ | ---------- | --------------- | ---------------- | -------------- |
-| BenchmarkCopyFile        | 17456      | 75932           | 33345            | 10             |
-| BenchmarkCopyDirectory   | 6166       | 195820          | 72500            | 63             |
+| Benchmark              | Time/op (ms) | Memory/op (MB) | Allocations/op | Notes                           |
+| ---------------------- | ------------ | -------------- | -------------- | ------------------------------- |
+| BenchmarkCopyFile      | 0.77         | 0.03           | 10             | Copies a 1MB file               |
+| BenchmarkCopyDirectory | 12.91        | 2.44           | 1603           | Copies a directory with 100+ files |
 
 ## Comparative Analysis
 
-To provide a clear picture of how Evoke stacks up against other popular static site generators, we've conducted a comparative analysis with Hugo. The following benchmarks were run on a test site with 100 markdown files of approximately 1KB each.
+To provide a clear picture of how Evoke stacks up against other popular static site generators, we conducted a comparative analysis with Hugo, Eleventy, and Gatsby. The following benchmarks were run on a test site with 5,000 markdown files.
 
-| SSG   | Build Time (real) | Peak Memory |
-| ----- | ----------------- | ----------- |
-| Evoke | 0.08s             | 10.4 MB     |
-| Hugo  | 0.39s             | 25.4 MB     |
+The test was conducted on an Apple M1 CPU. Each project was set up with a basic configuration, and the build time was measured using the `time` command.
 
-As the results show, Evoke is significantly faster and uses less memory than Hugo for this test case. This is a testament to Evoke's lightweight architecture and efficient design.
+| SSG      | Build Time (real) |
+| -------- | ----------------- |
+| Evoke    | 1.105s            |
+| Hugo     | 4.453s            |
+| Eleventy | 4.650s            |
+| Gatsby   | 22.432s           |
+
+As the results show, Evoke is significantly faster than the other static site generators in this test case. This is a testament to Evoke's lightweight architecture and efficient design. While this benchmark is not exhaustive, it provides a strong indication of Evoke's performance advantages for content-heavy sites.
 
 ## Summary
 
