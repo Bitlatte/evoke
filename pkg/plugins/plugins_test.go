@@ -82,10 +82,15 @@ func BenchmarkPlugin(b *testing.B) {
 
 	// Create the plugin client
 	client := &plugins.GRPCClient{Client: proto.NewPluginClient(conn)}
+	content := make([]byte, 1024*10) // 10KB
 
-	// Run the benchmark
-	for b.Loop() {
-		if err := client.OnPreBuild(); err != nil {
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	// Run the benchmark on a method that transfers data
+	for i := 0; i < b.N; i++ {
+		_, err := client.OnContentLoaded("path/to/content.md", content)
+		if err != nil {
 			b.Fatalf("err: %s", err)
 		}
 	}

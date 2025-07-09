@@ -1,6 +1,8 @@
 package build
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,12 +10,16 @@ import (
 	"runtime"
 	"sync"
 
+	"html/template"
+
 	"github.com/Bitlatte/evoke/pkg/config"
 	"github.com/Bitlatte/evoke/pkg/content"
 	"github.com/Bitlatte/evoke/pkg/partials"
+	"github.com/Bitlatte/evoke/pkg/pipelines"
 	"github.com/Bitlatte/evoke/pkg/plugins"
 	"github.com/Bitlatte/evoke/pkg/util"
 	"github.com/yuin/goldmark"
+
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
 )
@@ -94,70 +100,132 @@ func ProcessContent(outputDir string, loadedConfig map[string]interface{}, t *pa
 			html.WithUnsafe(),
 		),
 	)
-	contentProcessor, err := content.New(outputDir, loadedConfig, t, gm, loadedPlugins)
+
+	// TODO: Make pipelines configurable
+	var p []pipelines.Pipeline
+	p = append(p, pipelines.NewMarkdownPipeline(gm))
+	p = append(p, pipelines.NewHTMLPipeline())
+	p = append(p, pipelines.NewCopyPipeline())
+
+	contentProcessor, err := content.New(outputDir, loadedConfig, t, gm, loadedPlugins, p)
 	if err != nil {
 		return fmt.Errorf("error creating content processor: %w", err)
 	}
-	return ProcessContentWithProcessor(contentProcessor)
+	return ProcessContentWithProcessor(contentProcessor, loadedConfig)
 }
 
 // ProcessContentWithProcessor processes the content with a given processor.
-func ProcessContentWithProcessor(contentProcessor *content.Content) error {
-	if _, statErr := os.Stat("content"); !os.IsNotExist(statErr) {
-		if statErr != nil {
-			return fmt.Errorf("error checking content directory: %w", statErr)
-		}
-		var wg sync.WaitGroup
-		jobs := make(chan string)
-		errs := make(chan error, runtime.NumCPU())
+func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig map[string]interface{}) error {
+	if _, statErr := os.Stat("content"); os.IsNotExist(statErr) {
+		return nil // No content directory, nothing to do.
+	}
 
-		for i := 0; i < runtime.NumCPU(); i++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				for path := range jobs {
-					ext := filepath.Ext(path)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Ensure context is always cancelled
+
+	var wg sync.WaitGroup
+	jobs := make(chan pipelines.Asset)
+	errs := make(chan error, 1)
+
+	// Function to handle error and cancel context
+	handleError := func(err error) {
+		select {
+		case errs <- err:
+		default:
+		}
+		cancel()
+	}
+
+	// Start worker goroutines
+	for i := 0; i < runtime.NumCPU(); i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case asset, ok := <-jobs:
+					if !ok {
+						return
+					}
+
+					var processedAsset *pipelines.Asset
 					var err error
-					switch ext {
-					case ".html":
-						err = contentProcessor.ProcessHTML(path)
-					case ".md":
-						err = contentProcessor.ProcessMarkdown(path)
+					ext := filepath.Ext(asset.Path)
+					if ext == ".md" {
+						processedAsset, err = contentProcessor.Pipelines[0].Process(&asset)
+					} else if ext == ".html" {
+						processedAsset, err = contentProcessor.Pipelines[1].Process(&asset)
+					} else {
+						processedAsset, err = contentProcessor.Pipelines[2].Process(&asset)
 					}
 					if err != nil {
-						errs <- err
+						handleError(fmt.Errorf("pipeline error for %s: %w", asset.Path, err))
+						return
+					}
+
+					if filepath.Ext(processedAsset.Path) == ".html" {
+						layouts := getLayouts(processedAsset.Path, contentProcessor.Partials)
+						buf := new(bytes.Buffer)
+						if _, err := buf.ReadFrom(processedAsset.Content); err != nil {
+							handleError(fmt.Errorf("buffer read error for %s: %w", asset.Path, err))
+							return
+						}
+						processedContent, err := processLayouts(layouts, buf.Bytes(), processedAsset.Metadata, contentProcessor.Partials, loadedConfig)
+						if err != nil {
+							handleError(fmt.Errorf("layout error for %s: %w", asset.Path, err))
+							return
+						}
+
+						outputPath := filepath.Join(contentProcessor.OutputDir, processedAsset.Path[len("content"):])
+						if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+							handleError(err)
+							return
+						}
+						if err := os.WriteFile(outputPath, processedContent, 0644); err != nil {
+							handleError(err)
+							return
+						}
 					}
 				}
-			}()
-		}
+			}
+		}()
+	}
 
+	// Start file walker in a separate goroutine
+	go func() {
+		defer close(jobs)
 		err := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
-
-			if !info.IsDir() && info.Name()[0] != '_' {
-				jobs <- path
+			if ctx.Err() != nil {
+				return ctx.Err() // Stop walking if context is cancelled
 			}
-
+			if !info.IsDir() && info.Name()[0] != '_' {
+				content, err := os.ReadFile(path)
+				if err != nil {
+					return err
+				}
+				select {
+				case jobs <- pipelines.Asset{Path: path, Content: bytes.NewReader(content)}:
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
 			return nil
 		})
-
-		close(jobs)
-		wg.Wait()
-		close(errs)
-
 		if err != nil {
-			return err
+			handleError(err)
 		}
+	}()
 
-		for e := range errs {
-			// For now, we'll just return the first error we see.
-			// A more robust solution might collect all errors.
-			return e
-		}
-	}
-	return nil
+	wg.Wait()
+	close(errs)
+
+	// Return the first error that occurred
+	return <-errs
 }
 
 // RunOnPostBuildHooks runs the OnPostBuild hooks for the given plugins.
@@ -168,6 +236,57 @@ func RunOnPostBuildHooks(loadedPlugins []plugins.Plugin) error {
 		}
 	}
 	return nil
+}
+
+func getLayouts(path string, p *partials.Partials) []string {
+	// This is a simplified version of the original getLayouts function.
+	// A more robust implementation would cache the layouts.
+	var layouts []string
+	currentDir := filepath.Dir(path)
+	for {
+		layoutPath := filepath.Join(currentDir, "_layout.html")
+		if _, err := os.Stat(layoutPath); err == nil {
+			layouts = append(layouts, layoutPath)
+		}
+		if currentDir == "content" || currentDir == "." || currentDir == "/" {
+			break
+		}
+		currentDir = filepath.Dir(currentDir)
+	}
+	return layouts
+}
+
+func processLayouts(layouts []string, content []byte, frontMatter map[string]any, p *partials.Partials, config map[string]any) ([]byte, error) {
+	processedContent := content
+
+	for _, layoutPath := range layouts {
+		layoutContent := new(bytes.Buffer)
+
+		t, err := p.Clone()
+		if err != nil {
+			return nil, err
+		}
+		if _, err = t.Template.ParseFiles(layoutPath); err != nil {
+			return nil, err
+		}
+
+		data := struct {
+			Global  map[string]any
+			Page    map[string]any
+			Content template.HTML
+		}{
+			Global:  config,
+			Page:    frontMatter,
+			Content: template.HTML(processedContent),
+		}
+
+		if err := t.Template.ExecuteTemplate(layoutContent, filepath.Base(layoutPath), data); err != nil {
+			return nil, err
+		}
+		processedContent = layoutContent.Bytes()
+	}
+
+	return processedContent, nil
 }
 
 func Build(outputDir string) error {
