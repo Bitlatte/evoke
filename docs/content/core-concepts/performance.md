@@ -89,12 +89,12 @@ To provide a clear picture of how Evoke stacks up against other popular static s
 
 The test was conducted on an Apple M1 CPU. Each project was set up with a basic configuration, and the build time was measured using the `time` command.
 
-| SSG      | Build Time (real) |
-| -------- | ----------------- |
-| Evoke    | 1.105s            |
-| Hugo     | 4.453s            |
-| Eleventy | 4.650s            |
-| Gatsby   | 22.432s           |
+| SSG      | Build Time (real) | Time Difference | Times Slower |
+| -------- | ----------------- | --------------- | ------------ |
+| Evoke    | 1.105s            | -               | -            |
+| Hugo     | 4.453s            | +3.348s         | 4.03x        |
+| Eleventy | 4.650s            | +0.197s         | 1.04x        |
+| Gatsby   | 22.432s           | +17.782s        | 4.82x        |
 
 As the results show, Evoke is significantly faster than the other static site generators in this test case. This is a testament to Evoke's lightweight architecture and efficient design. While this benchmark is not exhaustive, it provides a strong indication of Evoke's performance advantages for content-heavy sites.
 
