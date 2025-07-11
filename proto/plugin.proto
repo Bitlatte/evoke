@@ -35,17 +35,41 @@ service Plugin {
 
   // --- Finalization Hooks ---
 
-  // Called once after all content has been processed and written to disk.
-  rpc OnPostBuild(PostBuildRequest) returns (PostBuildResponse);
+// Called once after all content has been processed and written to disk.
+rpc OnPostBuild(PostBuildRequest) returns (PostBuildResponse);
+
+// Called to register custom pipelines.
+rpc RegisterPipelines(RegisterPipelinesRequest) returns (RegisterPipelinesResponse);
+
+// Called to process an asset with a custom pipeline.
+rpc ProcessAsset(Asset) returns (Asset);
 }
 
 // Represents a file being processed. This message will be reused for
 // multiple hooks to pass content back and forth.
 message ContentFile {
-  // The relative path of the file from the content directory.
-  string path = 1;
-  // The raw or processed content of the file.
-  bytes content = 2;
+// The relative path of the file from the content directory.
+string path = 1;
+// The raw or processed content of the file.
+bytes content = 2;
+}
+
+// Represents an asset being processed by a custom pipeline.
+message Asset {
+string path = 1;
+bytes content = 2;
+string pipeline_name = 3;
+}
+
+// Represents a custom pipeline that can be registered by a plugin.
+message Pipeline {
+string name = 1;
+repeated string extensions = 2;
+}
+
+message RegisterPipelinesRequest {}
+message RegisterPipelinesResponse {
+repeated Pipeline pipelines = 1;
 }
 
 // Placeholder request/response messages for other hooks.

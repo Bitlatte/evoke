@@ -41,6 +41,10 @@ type PluginClient interface {
 	OnHTMLRendered(ctx context.Context, in *ContentFile, opts ...grpc.CallOption) (*ContentFile, error)
 	// Called once after all content has been processed and written to disk.
 	OnPostBuild(ctx context.Context, in *PostBuildRequest, opts ...grpc.CallOption) (*PostBuildResponse, error)
+	// Called to register custom pipelines.
+	RegisterPipelines(ctx context.Context, in *RegisterPipelinesRequest, opts ...grpc.CallOption) (*RegisterPipelinesResponse, error)
+	// Called to process an asset with a custom pipeline.
+	ProcessAsset(ctx context.Context, in *Asset, opts ...grpc.CallOption) (*Asset, error)
 }
 
 type pluginClient struct {
@@ -114,6 +118,24 @@ func (c *pluginClient) OnPostBuild(ctx context.Context, in *PostBuildRequest, op
 	return out, nil
 }
 
+func (c *pluginClient) RegisterPipelines(ctx context.Context, in *RegisterPipelinesRequest, opts ...grpc.CallOption) (*RegisterPipelinesResponse, error) {
+	out := new(RegisterPipelinesResponse)
+	err := c.cc.Invoke(ctx, "/proto.Plugin/RegisterPipelines", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pluginClient) ProcessAsset(ctx context.Context, in *Asset, opts ...grpc.CallOption) (*Asset, error) {
+	out := new(Asset)
+	err := c.cc.Invoke(ctx, "/proto.Plugin/ProcessAsset", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PluginServer is the server API for Plugin service.
 // All implementations must embed UnimplementedPluginServer
 // for forward compatibility
@@ -137,6 +159,10 @@ type PluginServer interface {
 	OnHTMLRendered(context.Context, *ContentFile) (*ContentFile, error)
 	// Called once after all content has been processed and written to disk.
 	OnPostBuild(context.Context, *PostBuildRequest) (*PostBuildResponse, error)
+	// Called to register custom pipelines.
+	RegisterPipelines(context.Context, *RegisterPipelinesRequest) (*RegisterPipelinesResponse, error)
+	// Called to process an asset with a custom pipeline.
+	ProcessAsset(context.Context, *Asset) (*Asset, error)
 	mustEmbedUnimplementedPluginServer()
 }
 
@@ -164,6 +190,12 @@ func (UnimplementedPluginServer) OnHTMLRendered(context.Context, *ContentFile) (
 }
 func (UnimplementedPluginServer) OnPostBuild(context.Context, *PostBuildRequest) (*PostBuildResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OnPostBuild not implemented")
+}
+func (UnimplementedPluginServer) RegisterPipelines(context.Context, *RegisterPipelinesRequest) (*RegisterPipelinesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterPipelines not implemented")
+}
+func (UnimplementedPluginServer) ProcessAsset(context.Context, *Asset) (*Asset, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessAsset not implemented")
 }
 func (UnimplementedPluginServer) mustEmbedUnimplementedPluginServer() {}
 
@@ -304,6 +336,42 @@ func _Plugin_OnPostBuild_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Plugin_RegisterPipelines_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterPipelinesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PluginServer).RegisterPipelines(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Plugin/RegisterPipelines",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PluginServer).RegisterPipelines(ctx, req.(*RegisterPipelinesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Plugin_ProcessAsset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Asset)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PluginServer).ProcessAsset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Plugin/ProcessAsset",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PluginServer).ProcessAsset(ctx, req.(*Asset))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Plugin_ServiceDesc is the grpc.ServiceDesc for Plugin service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -338,6 +406,14 @@ var Plugin_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "OnPostBuild",
 			Handler:    _Plugin_OnPostBuild_Handler,
+		},
+		{
+			MethodName: "RegisterPipelines",
+			Handler:    _Plugin_RegisterPipelines_Handler,
+		},
+		{
+			MethodName: "ProcessAsset",
+			Handler:    _Plugin_ProcessAsset_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

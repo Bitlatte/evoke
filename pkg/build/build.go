@@ -103,11 +103,21 @@ func ProcessContent(outputDir string, loadedConfig map[string]interface{}, t *pa
 		),
 	)
 
-	// TODO: Make pipelines configurable
 	var p []pipelines.Pipeline
 	p = append(p, pipelines.NewMarkdownPipeline(gm))
 	p = append(p, pipelines.NewHTMLPipeline())
 	p = append(p, pipelines.NewCopyPipeline())
+
+	// Register plugin pipelines
+	for _, plugin := range loadedPlugins {
+		pluginPipelines, err := plugin.RegisterPipelines()
+		if err != nil {
+			return fmt.Errorf("error registering pipelines: %w", err)
+		}
+		for _, pipeline := range pluginPipelines {
+			p = append(p, pipelines.NewGRPCPipeline(plugin, pipeline.Name))
+		}
+	}
 
 	contentProcessor, err := content.New(outputDir, loadedConfig, t, gm, loadedPlugins, p)
 	if err != nil {
@@ -154,14 +164,54 @@ func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig
 
 					var processedAsset *pipelines.Asset
 					var err error
+					var pipeline pipelines.Pipeline
 					ext := filepath.Ext(asset.Path)
-					if ext == ".md" {
-						processedAsset, err = contentProcessor.Pipelines[0].Process(&asset)
-					} else if ext == ".html" {
-						processedAsset, err = contentProcessor.Pipelines[1].Process(&asset)
-					} else {
-						processedAsset, err = contentProcessor.Pipelines[2].Process(&asset)
+					switch ext {
+					case ".md":
+						pipeline = contentProcessor.Pipelines[0]
+					case ".html":
+						pipeline = contentProcessor.Pipelines[1]
+					default:
+						// Check for a plugin pipeline
+						for _, p := range contentProcessor.Pipelines[3:] {
+							grpcPipeline, ok := p.(*pipelines.GRPC)
+							if !ok {
+								continue
+							}
+							// This is a bit of a hack, but we need to get the extensions
+							// for the pipeline. We'll do this by calling the RegisterPipelines
+							// method on the plugin.
+							pluginPipelines, err := grpcPipeline.Plugin.RegisterPipelines()
+							if err != nil {
+								handleError(fmt.Errorf("error getting plugin pipelines: %w", err))
+								return
+							}
+
+							for _, pp := range pluginPipelines {
+								if pp.Name == grpcPipeline.Name {
+									for _, e := range pp.Extensions {
+										if e == ext {
+											pipeline = p
+											break
+										}
+									}
+								}
+								if pipeline != nil {
+									break
+								}
+							}
+							if pipeline != nil {
+								break
+							}
+						}
 					}
+
+					// If no pipeline was found, use the copy pipeline
+					if pipeline == nil {
+						pipeline = contentProcessor.Pipelines[2]
+					}
+
+					processedAsset, err = pipeline.Process(&asset)
 					if err != nil {
 						handleError(fmt.Errorf("pipeline error for %s: %w", asset.Path, err))
 						return

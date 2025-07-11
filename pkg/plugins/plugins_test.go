@@ -28,6 +28,17 @@ func (m *mockPlugin) OnHTMLRendered(path string, content []byte) ([]byte, error)
 	return content, nil
 }
 func (m *mockPlugin) OnPostBuild() error { return nil }
+func (m *mockPlugin) RegisterPipelines() ([]*proto.Pipeline, error) {
+	return []*proto.Pipeline{
+		{
+			Name:       "test",
+			Extensions: []string{".test"},
+		},
+	}, nil
+}
+func (m *mockPlugin) ProcessAsset(asset *proto.Asset) (*proto.Asset, error) {
+	return asset, nil
+}
 
 func TestPlugin(t *testing.T) {
 	// Create a mock server
@@ -51,7 +62,7 @@ func TestPlugin(t *testing.T) {
 	defer conn.Close()
 
 	// Create the plugin client
-	client := &plugins.GRPCClient{Client: proto.NewPluginClient(conn)}
+	client := &plugins.EvokeGRPCClient{Client: proto.NewPluginClient(conn)}
 
 	// Test the plugin methods
 	if err := client.OnPreBuild(); err != nil {
@@ -81,7 +92,7 @@ func BenchmarkPlugin(b *testing.B) {
 	defer conn.Close()
 
 	// Create the plugin client
-	client := &plugins.GRPCClient{Client: proto.NewPluginClient(conn)}
+	client := &plugins.EvokeGRPCClient{Client: proto.NewPluginClient(conn)}
 	content := make([]byte, 1024*10) // 10KB
 
 	b.ResetTimer()

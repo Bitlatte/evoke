@@ -7,66 +7,6 @@ import (
 	"github.com/Bitlatte/evoke/proto"
 )
 
-// GRPCClient is an implementation of Plugin that talks over RPC.
-type GRPCClient struct {
-	// Client is the gRPC client for the plugin.
-	Client proto.PluginClient
-}
-
-// OnPreBuild is called before the build process starts.
-func (m *GRPCClient) OnPreBuild() error {
-	_, err := m.Client.OnPreBuild(context.Background(), &proto.PreBuildRequest{})
-	return err
-}
-
-// OnConfigLoaded is called after the configuration is loaded.
-func (m *GRPCClient) OnConfigLoaded(config []byte) ([]byte, error) {
-	resp, err := m.Client.OnConfigLoaded(context.Background(), &proto.ConfigLoadedRequest{ConfigJson: string(config)})
-	if err != nil {
-		return nil, err
-	}
-	return []byte(resp.ConfigJson), nil
-}
-
-// OnPublicAssetsCopied is called after the public assets are copied.
-func (m *GRPCClient) OnPublicAssetsCopied() error {
-	_, err := m.Client.OnPublicAssetsCopied(context.Background(), &proto.PublicAssetsCopiedRequest{})
-	return err
-}
-
-// OnContentLoaded is called after a content file is loaded.
-func (m *GRPCClient) OnContentLoaded(path string, content []byte) ([]byte, error) {
-	resp, err := m.Client.OnContentLoaded(context.Background(), &proto.ContentFile{Path: path, Content: content})
-	if err != nil {
-		return nil, err
-	}
-	return resp.Content, nil
-}
-
-// OnContentRender is called after a content file is rendered.
-func (m *GRPCClient) OnContentRender(path string, content []byte) ([]byte, error) {
-	resp, err := m.Client.OnContentRender(context.Background(), &proto.ContentFile{Path: path, Content: content})
-	if err != nil {
-		return nil, err
-	}
-	return resp.Content, nil
-}
-
-// OnHTMLRendered is called after the HTML is rendered.
-func (m *GRPCClient) OnHTMLRendered(path string, content []byte) ([]byte, error) {
-	resp, err := m.Client.OnHTMLRendered(context.Background(), &proto.ContentFile{Path: path, Content: content})
-	if err != nil {
-		return nil, err
-	}
-	return resp.Content, nil
-}
-
-// OnPostBuild is called after the build process is finished.
-func (m *GRPCClient) OnPostBuild() error {
-	_, err := m.Client.OnPostBuild(context.Background(), &proto.PostBuildRequest{})
-	return err
-}
-
 // GRPCServer is the gRPC server that GRPCClient talks to.
 type GRPCServer struct {
 	// Impl is the real implementation of the plugin.
@@ -123,4 +63,18 @@ func (m *GRPCServer) OnHTMLRendered(ctx context.Context, req *proto.ContentFile)
 // OnPostBuild is called after the build process is finished.
 func (m *GRPCServer) OnPostBuild(ctx context.Context, req *proto.PostBuildRequest) (*proto.PostBuildResponse, error) {
 	return &proto.PostBuildResponse{}, m.Impl.OnPostBuild()
+}
+
+// RegisterPipelines is called to register custom pipelines.
+func (m *GRPCServer) RegisterPipelines(ctx context.Context, req *proto.RegisterPipelinesRequest) (*proto.RegisterPipelinesResponse, error) {
+	pipelines, err := m.Impl.RegisterPipelines()
+	if err != nil {
+		return nil, err
+	}
+	return &proto.RegisterPipelinesResponse{Pipelines: pipelines}, nil
+}
+
+// ProcessAsset is called to process an asset with a custom pipeline.
+func (m *GRPCServer) ProcessAsset(ctx context.Context, req *proto.Asset) (*proto.Asset, error) {
+	return m.Impl.ProcessAsset(req)
 }
