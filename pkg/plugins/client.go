@@ -44,6 +44,8 @@ func (p *EvokePlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker,
 
 // Plugin is the interface that all evoke plugins must implement.
 type Plugin interface {
+	// Name returns the name of the plugin.
+	Name() string
 	// OnPreBuild is called before the build process starts.
 	OnPreBuild() error
 	// OnConfigLoaded is called after the configuration is loaded.
@@ -65,7 +67,15 @@ type Plugin interface {
 }
 
 // EvokeGRPCClient is an implementation of Plugin that talks over RPC.
-type EvokeGRPCClient struct{ Client proto.PluginClient }
+type EvokeGRPCClient struct {
+	Client proto.PluginClient
+	name   string
+}
+
+// Name returns the name of the plugin.
+func (m *EvokeGRPCClient) Name() string {
+	return m.name
+}
 
 // OnPreBuild is called before the build process starts.
 func (m *EvokeGRPCClient) OnPreBuild() error {
@@ -189,11 +199,12 @@ func LoadPlugins() ([]Plugin, error) {
 		}
 
 		// Assert that the plugin is the correct type
-		p, ok := raw.(Plugin)
+		p, ok := raw.(*EvokeGRPCClient)
 		if !ok {
 			return err
 		}
 
+		p.name = filepath.Base(path)
 		plugins = append(plugins, p)
 
 		return nil

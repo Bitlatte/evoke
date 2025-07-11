@@ -16,6 +16,7 @@ import (
 	"github.com/Bitlatte/evoke/pkg/config"
 	"github.com/Bitlatte/evoke/pkg/content"
 	"github.com/Bitlatte/evoke/pkg/defaults"
+	"github.com/Bitlatte/evoke/pkg/logger"
 	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/Bitlatte/evoke/pkg/pipelines"
 	"github.com/Bitlatte/evoke/pkg/plugins"
@@ -28,15 +29,24 @@ import (
 
 // LoadPlugins loads the build plugins.
 func LoadPlugins() ([]plugins.Plugin, error) {
+	logger.Logger.Debug("Loading plugins...")
 	if _, err := os.Stat("plugins"); os.IsNotExist(err) {
+		logger.Logger.Debug("No plugins directory found, skipping plugin loading.")
 		return nil, nil
 	}
-	return plugins.LoadPlugins()
+	p, err := plugins.LoadPlugins()
+	if err != nil {
+		return nil, err
+	}
+	logger.Logger.Debug("Plugins loaded.", "count", len(p))
+	return p, nil
 }
 
 // RunOnPreBuildHooks runs the OnPreBuild hooks for the given plugins.
 func RunOnPreBuildHooks(loadedPlugins []plugins.Plugin) error {
+	logger.Logger.Debug("Running OnPreBuild hooks...")
 	for _, p := range loadedPlugins {
+		logger.Logger.Debug("Running OnPreBuild hook", "plugin", p.Name())
 		if err := p.OnPreBuild(); err != nil {
 			return fmt.Errorf("error running OnPreBuild hook: %w", err)
 		}
@@ -46,7 +56,9 @@ func RunOnPreBuildHooks(loadedPlugins []plugins.Plugin) error {
 
 // RunOnConfigLoadedHooks runs the OnConfigLoaded hooks for the given plugins.
 func RunOnConfigLoadedHooks(loadedPlugins []plugins.Plugin, config []byte) ([]byte, error) {
+	logger.Logger.Debug("Running OnConfigLoaded hooks...")
 	for _, p := range loadedPlugins {
+		logger.Logger.Debug("Running OnConfigLoaded hook", "plugin", p.Name())
 		var err error
 		config, err = p.OnConfigLoaded(config)
 		if err != nil {
@@ -58,7 +70,9 @@ func RunOnConfigLoadedHooks(loadedPlugins []plugins.Plugin, config []byte) ([]by
 
 // RunOnPublicAssetsCopiedHooks runs the OnPublicAssetsCopied hooks for the given plugins.
 func RunOnPublicAssetsCopiedHooks(loadedPlugins []plugins.Plugin) error {
+	logger.Logger.Debug("Running OnPublicAssetsCopied hooks...")
 	for _, p := range loadedPlugins {
+		logger.Logger.Debug("Running OnPublicAssetsCopied hook", "plugin", p.Name())
 		if err := p.OnPublicAssetsCopied(); err != nil {
 			return fmt.Errorf("error running OnPublicAssetsCopied hook: %w", err)
 		}
@@ -68,34 +82,51 @@ func RunOnPublicAssetsCopiedHooks(loadedPlugins []plugins.Plugin) error {
 
 // CreateOutputDirectory creates the output directory.
 func CreateOutputDirectory(outputDir string) error {
+	logger.Logger.Debug("Creating output directory...", "path", outputDir)
 	return os.MkdirAll(outputDir, 0755)
 }
 
 // CopyPublicDirectory copies the public directory to the output directory.
 func CopyPublicDirectory(outputDir string) error {
+	logger.Logger.Debug("Copying public directory...")
 	if _, err := os.Stat("public"); !os.IsNotExist(err) {
 		if err := util.CopyDirectory("public", outputDir); err != nil {
 			return fmt.Errorf("error copying public directory: %w", err)
 		}
 	}
+	logger.Logger.Debug("Public directory copied.")
 	return nil
 }
 
 // LoadConfiguration loads the configuration.
 func LoadConfiguration() (map[string]interface{}, error) {
-	return config.LoadConfig()
+	logger.Logger.Debug("Loading configuration...")
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+	logger.Logger.Debug("Configuration loaded.")
+	return cfg, nil
 }
 
 // LoadPartials loads the partials.
 func LoadPartials() (*partials.Partials, error) {
+	logger.Logger.Debug("Loading partials...")
 	if _, err := os.Stat("partials"); !os.IsNotExist(err) {
-		return partials.LoadPartials()
+		p, err := partials.LoadPartials()
+		if err != nil {
+			return nil, err
+		}
+		logger.Logger.Debug("Partials loaded.")
+		return p, nil
 	}
+	logger.Logger.Debug("No partials directory found, skipping partial loading.")
 	return &partials.Partials{}, nil
 }
 
 // ProcessContent processes the content.
 func ProcessContent(outputDir string, loadedConfig map[string]interface{}, t *partials.Partials, loadedPlugins []plugins.Plugin) error {
+	logger.Logger.Debug("Processing content...")
 	gm := goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
 		goldmark.WithRendererOptions(
@@ -188,7 +219,7 @@ func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig
 							}
 
 							for _, pp := range pluginPipelines {
-								if pp.Name == grpcPipeline.Name {
+								if pp.Name == grpcPipeline.Name() {
 									for _, e := range pp.Extensions {
 										if e == ext {
 											pipeline = p
@@ -211,6 +242,7 @@ func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig
 						pipeline = contentProcessor.Pipelines[2]
 					}
 
+					logger.Logger.Debug("Processing asset", "path", asset.Path, "pipeline", pipeline.Name())
 					processedAsset, err = pipeline.Process(&asset)
 					if err != nil {
 						handleError(fmt.Errorf("pipeline error for %s: %w", asset.Path, err))
@@ -282,7 +314,9 @@ func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig
 
 // RunOnPostBuildHooks runs the OnPostBuild hooks for the given plugins.
 func RunOnPostBuildHooks(loadedPlugins []plugins.Plugin) error {
+	logger.Logger.Debug("Running OnPostBuild hooks...")
 	for _, p := range loadedPlugins {
+		logger.Logger.Debug("Running OnPostBuild hook", "plugin", p.Name())
 		if err := p.OnPostBuild(); err != nil {
 			return fmt.Errorf("error running OnPostBuild hook: %w", err)
 		}

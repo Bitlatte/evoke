@@ -13,6 +13,7 @@ import (
 // mockPlugin is a mock implementation of the Plugin interface.
 type mockPlugin struct{}
 
+func (m *mockPlugin) Name() string      { return "mock" }
 func (m *mockPlugin) OnPreBuild() error { return nil }
 func (m *mockPlugin) OnConfigLoaded(config []byte) ([]byte, error) {
 	return config, nil

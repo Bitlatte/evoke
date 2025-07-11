@@ -12,5 +12,6 @@ type Asset struct {
 
 // Pipeline is an interface for processing assets.
 type Pipeline interface {
+	Name() string
 	Process(asset *Asset) (*Asset, error)
 }

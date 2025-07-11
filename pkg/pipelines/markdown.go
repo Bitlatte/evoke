@@ -20,6 +20,11 @@ func NewMarkdownPipeline(gm goldmark.Markdown) *MarkdownPipeline {
 	return &MarkdownPipeline{Goldmark: gm}
 }
 
+// Name returns the name of the pipeline.
+func (p *MarkdownPipeline) Name() string {
+	return "markdown"
+}
+
 // Process processes the asset.
 func (p *MarkdownPipeline) Process(asset *Asset) (*Asset, error) {
 	if filepath.Ext(asset.Path) != ".md" {

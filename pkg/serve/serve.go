@@ -4,7 +4,6 @@ package serve
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Bitlatte/evoke/pkg/build"
+	"github.com/Bitlatte/evoke/pkg/logger"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/websocket"
 )
@@ -53,11 +53,11 @@ func Serve(port int) error {
 	optionalWatch := []string{"public", "plugins", "partials", "evoke.yaml"}
 	for _, item := range optionalWatch {
 		if err := watcher.Add(item); err != nil {
-			log.Printf("Warning: could not watch %s: %v", item, err)
+			logger.Logger.Warn("Could not watch", "item", item, "error", err)
 		}
 	}
 
-	log.Printf("Watching for changes...")
+	logger.Logger.Debug("Watching for changes...")
 	<-make(chan bool) // Block forever
 
 	return nil
@@ -81,11 +81,11 @@ func watchRecursive(watcher *fsnotify.Watcher, path string) error {
 // startServer starts the web server.
 func startServer(port int) {
 	portStr := strconv.Itoa(port)
-	log.Printf("Starting server on :%s", portStr)
+	logger.Logger.Debug("Starting server", "port", portStr)
 	http.HandleFunc("/ws", wsHandler)
 	http.HandleFunc("/", memoryFileServer)
 	if err := http.ListenAndServe(":"+portStr, nil); err != nil {
-		log.Fatalf("Server failed: %v", err)
+		logger.Logger.Fatal("Server failed", "error", err)
 	}
 }
 
@@ -93,7 +93,7 @@ func startServer(port int) {
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		logger.Logger.Error("Failed to upgrade connection", "error", err)
 		return
 	}
 
@@ -119,9 +119,10 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 func broadcast(message []byte) {
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
+	logger.Logger.Debug("Broadcasting message to clients", "clients", len(clients))
 	for client := range clients {
 		if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
-			log.Println(err)
+			logger.Logger.Error("Failed to write message to client", "error", err)
 			client.Close()
 			delete(clients, client)
 		}
@@ -159,6 +160,7 @@ func buildAndCache() error {
 	buildMutex.Lock()
 	defer buildMutex.Unlock()
 
+	logger.Logger.Debug("Building and caching site...")
 	tempDir, err := os.MkdirTemp("", "evoke-build-")
 	if err != nil {
 		return err
@@ -219,11 +221,11 @@ func watchFiles(watcher *fsnotify.Watcher) {
 				timer.Stop()
 			}
 			timer = time.AfterFunc(1*time.Second, func() {
-				log.Printf("Change detected in %s, rebuilding...", event.Name)
+				logger.Logger.Info("Change detected, rebuilding...", "file", event.Name)
 				if err := buildAndCache(); err != nil {
-					log.Printf("Error rebuilding site: %v", err)
+					logger.Logger.Error("Error rebuilding site", "error", err)
 				} else {
-					log.Println("Site rebuilt successfully.")
+					logger.Logger.Info("Site rebuilt successfully.")
 					lastBuildTime = time.Now()
 					broadcast([]byte("reload"))
 				}
@@ -232,7 +234,7 @@ func watchFiles(watcher *fsnotify.Watcher) {
 			if !ok {
 				return
 			}
-			log.Printf("Watcher error: %v", err)
+			logger.Logger.Error("Watcher error", "error", err)
 		}
 	}
 }

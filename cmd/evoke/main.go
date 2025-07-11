@@ -3,13 +3,13 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
 
 	"github.com/Bitlatte/evoke/pkg/build"
 	init_pkg "github.com/Bitlatte/evoke/pkg/init"
+	"github.com/Bitlatte/evoke/pkg/logger"
 	"github.com/Bitlatte/evoke/pkg/serve"
+	"github.com/charmbracelet/log"
 	"github.com/urfave/cli/v3"
 )
 
@@ -26,8 +26,24 @@ func main() {
 			{
 				Name:  "build",
 				Usage: "builds your content into static HTML",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "verbose",
+						Usage: "Enable verbose logging",
+					},
+				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return build.Build("dist")
+					if cmd.Bool("verbose") {
+						logger.Logger.SetLevel(log.DebugLevel)
+					}
+					logger.Logger.Info("Starting build...")
+					err := build.Build("dist")
+					if err != nil {
+						logger.Logger.Error("Build failed", "error", err)
+						return err
+					}
+					logger.Logger.Info("Build complete!")
+					return nil
 				},
 			},
 			{
@@ -42,7 +58,10 @@ func main() {
 				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					port := cmd.Value("port").(int)
-					fmt.Printf("Serving on port %d\n", port)
+					if cmd.Bool("verbose") {
+						logger.Logger.SetLevel(log.DebugLevel)
+					}
+					logger.Logger.Info("Starting server...", "port", port)
 					return serve.Serve(port)
 				},
 			},
@@ -57,6 +76,6 @@ func main() {
 	}
 
 	if err := cmd.Run(context.Background(), os.Args); err != nil {
-		log.Fatal(err)
+		logger.Logger.Fatal(err)
 	}
 }

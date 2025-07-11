@@ -10,15 +10,20 @@ import (
 // GRPC is a pipeline that uses a gRPC plugin to process assets.
 type GRPC struct {
 	Plugin plugins.Plugin
-	Name   string
+	name   string
 }
 
 // NewGRPCPipeline creates a new gRPC pipeline.
 func NewGRPCPipeline(plugin plugins.Plugin, name string) *GRPC {
 	return &GRPC{
 		Plugin: plugin,
-		Name:   name,
+		name:   name,
 	}
+}
+
+// Name returns the name of the pipeline.
+func (p *GRPC) Name() string {
+	return p.name
 }
 
 // Process processes an asset using the gRPC plugin.
@@ -31,7 +36,7 @@ func (p *GRPC) Process(asset *Asset) (*Asset, error) {
 	processedAsset, err := p.Plugin.ProcessAsset(&proto.Asset{
 		Path:         asset.Path,
 		Content:      buf.Bytes(),
-		PipelineName: p.Name,
+		PipelineName: p.name,
 	})
 	if err != nil {
 		return nil, err

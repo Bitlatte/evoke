@@ -15,6 +15,11 @@ func NewHTMLPipeline() *HTMLPipeline {
 	return &HTMLPipeline{}
 }
 
+// Name returns the name of the pipeline.
+func (p *HTMLPipeline) Name() string {
+	return "html"
+}
+
 // Process processes the asset.
 func (p *HTMLPipeline) Process(asset *Asset) (*Asset, error) {
 	if filepath.Ext(asset.Path) != ".html" {

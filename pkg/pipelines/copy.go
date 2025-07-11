@@ -15,6 +15,11 @@ func NewCopyPipeline() *CopyPipeline {
 	return &CopyPipeline{}
 }
 
+// Name returns the name of the pipeline.
+func (p *CopyPipeline) Name() string {
+	return "copy"
+}
+
 // Process processes the asset.
 func (p *CopyPipeline) Process(asset *Asset) (*Asset, error) {
 	ext := filepath.Ext(asset.Path)
