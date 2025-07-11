@@ -62,6 +62,16 @@ The easiest way to start a new Evoke project is to use the `init` command.
 
     Evoke will generate your static site in a new `dist` directory. Open `dist/index.html` in your browser to see the result.
 
+## Live Reloading
+
+Evoke comes with a built-in development server that will automatically reload your site when you make changes. To start the development server, run the `evoke serve` command from the root of your project.
+
+```bash
+evoke serve
+```
+
+This will start a local web server at `http://localhost:8990`. Open this URL in your browser to see your site. Now, whenever you make a change to a file in your project, Evoke will automatically rebuild your site and reload the page in your browser.
+
 ## Project Structure Explained
 
 As your project grows, you can add more directories to organize your files:
@@ -83,4 +93,4 @@ As your project grows, you can add more directories to organize your files:
 
 ## What's Next?
 
-You've successfully built your first site with Evoke! To learn more about what you can do, check out the **[Core Concepts](./core-concepts/build-process.md)**.
+You've successfully built your first site with Evoke! To learn more about what you can do, check out the **[Core Concepts](./core-concepts/build-process.html)**.

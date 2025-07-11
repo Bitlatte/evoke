@@ -112,3 +112,34 @@ You can then loop through these posts in your template and render a partial for 
 ```
 
 This powerful combination of partials, data, and loops allows you to build complex and maintainable websites with ease.
+
+## Nested Partials
+
+You can also nest partials within other partials. This is useful for creating complex components from smaller, more manageable pieces.
+
+### Example: A `profile` Partial
+
+Let's create a `profile` partial that uses a `card` partial.
+
+`partials/profile.html`:
+
+```html
+<div class="profile">
+  {{ template "card.html" (dict "Title" .Name "Content" .Bio) }}
+</div>
+```
+
+Now, you can use the `profile` partial in your content files:
+
+`content/about.md`:
+
+```markdown
+---
+title: "About Me"
+name: "John Doe"
+bio: "I am a web developer."
+---
+
+# About Me
+
+{{ template "profile.html" . }}

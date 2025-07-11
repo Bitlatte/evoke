@@ -29,32 +29,33 @@ import (
 // Here is a real implementation of the plugin.
 type ModifierPlugin struct{}
 
-func (p *ModifierPlugin) OnPreBuild() error {
-	return nil
+func (p *ModifierPlugin) OnPreBuild(ctx context.Context, req *proto.OnPreBuildRequest) (*proto.OnPreBuildResponse, error) {
+	return &proto.OnPreBuildResponse{}, nil
 }
 
-func (p *ModifierPlugin) OnConfigLoaded(config []byte) ([]byte, error) {
-	return config, nil
+func (p *ModifierPlugin) OnConfigLoaded(ctx context.Context, req *proto.OnConfigLoadedRequest) (*proto.OnConfigLoadedResponse, error) {
+	return &proto.OnConfigLoadedResponse{Config: req.Config}, nil
 }
 
-func (p *ModifierPlugin) OnPublicAssetsCopied() error {
-	return nil
+func (p *ModifierPlugin) OnPublicAssetsCopied(ctx context.Context, req *proto.OnPublicAssetsCopiedRequest) (*proto.OnPublicAssetsCopiedResponse, error) {
+	return &proto.OnPublicAssetsCopiedResponse{}, nil
 }
 
-func (p *ModifierPlugin) OnContentLoaded(path string, content []byte) ([]byte, error) {
-	return bytes.ReplaceAll(content, []byte("Hello"), []byte("Hello from our plugin!")), nil
+func (p *ModifierPlugin) OnContentLoaded(ctx context.Context, req *proto.OnContentLoadedRequest) (*proto.OnContentLoadedResponse, error) {
+	newContent := bytes.ReplaceAll(req.Content, []byte("Hello"), []byte("Hello from our plugin!"))
+	return &proto.OnContentLoadedResponse{Content: newContent}, nil
 }
 
-func (p *ModifierPlugin) OnContentRender(path string, content []byte) ([]byte, error) {
-	return content, nil
+func (p *ModifierPlugin) OnContentRender(ctx context.Context, req *proto.OnContentRenderRequest) (*proto.OnContentRenderResponse, error) {
+	return &proto.OnContentRenderResponse{Content: req.Content}, nil
 }
 
-func (p *ModifierPlugin) OnHTMLRendered(path string, content []byte) ([]byte, error) {
-	return content, nil
+func (p *ModifierPlugin) OnHTMLRendered(ctx context.Context, req *proto.OnHTMLRenderedRequest) (*proto.OnHTMLRenderedResponse, error) {
+	return &proto.OnHTMLRenderedResponse{Content: req.Content}, nil
 }
 
-func (p *ModifierPlugin) OnPostBuild() error {
-	return nil
+func (p *ModifierPlugin) OnPostBuild(ctx context.Context, req *proto.OnPostBuildRequest) (*proto.OnPostBuildResponse, error) {
+	return &proto.OnPostBuildResponse{}, nil
 }
 
 func main() {

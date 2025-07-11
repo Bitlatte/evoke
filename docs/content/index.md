@@ -1,6 +1,6 @@
-# Evoke: The Powerful Little Static Site Generator
+# Evoke: A Powerful, Simple, and Fast Static Site Generator
 
-Welcome to Evoke, a static site generator that is small, fast, and powerful. Evoke is designed to be easy to use, with sensible defaults that allow for near-zero configuration. It also has full template support and an extension system that allows you to extend the core functionality.
+Welcome to the official documentation for Evoke, a static site generator that is small, fast, and powerful. Evoke is designed to be easy to use, with sensible defaults that allow for near-zero configuration. It also has full template support and an extension system that allows you to extend the core functionality.
 
 ## Why Evoke?
 
@@ -19,46 +19,27 @@ Evoke is built around a few core concepts that make it powerful and easy to use.
 - **[Partials](./core-concepts/partials.html):** Learn how to create reusable snippets of HTML.
 - **[Performance](./core-concepts/performance.html):** See what makes Evoke so fast and efficient.
 
-## Quick Start
-
-Ready to get started? Here's a quick overview of how to install Evoke and create your first project.
-
-### Installation
-
-To install Evoke, you'll need to have Go installed on your system. You can then install Evoke using the following command:
-
-```bash
-go install github.com/Bitlatte/evoke/cmd/evoke@latest
-```
-
-### Create a New Project
-
-To create a new project, use the `evoke init` command.
-
-```bash
-evoke init
-```
-
-### Create Some Content
-
-In the `content` directory, modify the `index.md` file and add some content to it.
-
-```markdown
-# Hello, World!
-
-This is my first Evoke page.
-```
-
-### Build Your Site
-
-To build your site, run the `evoke build` command from the root of your project.
-
-```bash
-evoke build
-```
-
-Evoke will build your site and place the output in the `dist` directory.
-
 ## Getting Started
 
-If you're ready to learn more, head over to the [Getting Started](./getting-started.md) page for a more in-depth guide to creating your first project.
+If you're ready to learn more, head over to the [Getting Started](./getting-started.html) page for a more in-depth guide to creating your first project.
+
+## Plugins
+
+Evoke has a powerful plugin system that allows you to extend the core functionality of the static site generator. You can use plugins to add new features, such as support for additional languages, new template functions, or custom build steps.
+
+- **[Creating Plugins](./plugins/creating-plugins.html):** Learn how to create your own plugins to extend the functionality of Evoke.
+- **[Installing Plugins](./plugins/building-and-installing.html):** Find out how to install and use plugins in your Evoke project.
+
+## Contributing
+
+Evoke is an open-source project, and we welcome contributions from the community. Whether you're a developer, a designer, or a writer, there are many ways to contribute to the project.
+
+- **[Reporting Bugs](./contributing/reporting-bugs.html):** If you find a bug, please report it so we can fix it.
+- **[Suggesting Features](./contributing/suggesting-features.html):** Have an idea for a new feature? We'd love to hear it.
+- **[Contributing Code](./contributing/contributing-code.html):** If you're a developer, you can contribute to the project by writing code.
+
+## Need Help?
+
+If you have any questions or need help with Evoke, please feel free to reach out to us.
+
+- **[GitHub Issues](https://github.com/Bitlatte/evoke/issues):** Report bugs and suggest features.

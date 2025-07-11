@@ -45,39 +45,39 @@ import (
 // Here is a real implementation of the plugin.
 type HelloPlugin struct{}
 
-func (p *HelloPlugin) OnPreBuild() error {
+func (p *HelloPlugin) OnPreBuild(ctx context.Context, req *proto.OnPreBuildRequest) (*proto.OnPreBuildResponse, error) {
 	fmt.Println("Hello from the OnPreBuild hook!")
-	return nil
+	return &proto.OnPreBuildResponse{}, nil
 }
 
-func (p *HelloPlugin) OnConfigLoaded(config []byte) ([]byte, error) {
+func (p *HelloPlugin) OnConfigLoaded(ctx context.Context, req *proto.OnConfigLoadedRequest) (*proto.OnConfigLoadedResponse, error) {
 	fmt.Println("Hello from the OnConfigLoaded hook!")
-	return config, nil
+	return &proto.OnConfigLoadedResponse{Config: req.Config}, nil
 }
 
-func (p *HelloPlugin) OnPublicAssetsCopied() error {
+func (p *HelloPlugin) OnPublicAssetsCopied(ctx context.Context, req *proto.OnPublicAssetsCopiedRequest) (*proto.OnPublicAssetsCopiedResponse, error) {
 	fmt.Println("Hello from the OnPublicAssetsCopied hook!")
-	return nil
+	return &proto.OnPublicAssetsCopiedResponse{}, nil
 }
 
-func (p *HelloPlugin) OnContentLoaded(path string, content []byte) ([]byte, error) {
-	fmt.Printf("Hello from the OnContentLoaded hook for %s!\n", path)
-	return content, nil
+func (p *HelloPlugin) OnContentLoaded(ctx context.Context, req *proto.OnContentLoadedRequest) (*proto.OnContentLoadedResponse, error) {
+	fmt.Printf("Hello from the OnContentLoaded hook for %s!\n", req.Path)
+	return &proto.OnContentLoadedResponse{Content: req.Content}, nil
 }
 
-func (p *HelloPlugin) OnContentRender(path string, content []byte) ([]byte, error) {
-	fmt.Printf("Hello from the OnContentRender hook for %s!\n", path)
-	return content, nil
+func (p *HelloPlugin) OnContentRender(ctx context.Context, req *proto.OnContentRenderRequest) (*proto.OnContentRenderResponse, error) {
+	fmt.Printf("Hello from the OnContentRender hook for %s!\n", req.Path)
+	return &proto.OnContentRenderResponse{Content: req.Content}, nil
 }
 
-func (p *HelloPlugin) OnHTMLRendered(path string, content []byte) ([]byte, error) {
-	fmt.Printf("Hello from the OnHTMLRendered hook for %s!\n", path)
-	return content, nil
+func (p *HelloPlugin) OnHTMLRendered(ctx context.Context, req *proto.OnHTMLRenderedRequest) (*proto.OnHTMLRenderedResponse, error) {
+	fmt.Printf("Hello from the OnHTMLRendered hook for %s!\n", req.Path)
+	return &proto.OnHTMLRenderedResponse{Content: req.Content}, nil
 }
 
-func (p *HelloPlugin) OnPostBuild() error {
+func (p *HelloPlugin) OnPostBuild(ctx context.Context, req *proto.OnPostBuildRequest) (*proto.OnPostBuildResponse, error) {
 	fmt.Println("Hello from the OnPostBuild hook!")
-	return nil
+	return &proto.OnPostBuildResponse{}, nil
 }
 
 func main() {

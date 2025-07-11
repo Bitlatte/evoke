@@ -93,3 +93,23 @@ You can access these variables in your templates using the `.` (dot) notation. F
 In this example, `{{ .content }}` is a special variable that contains the rendered HTML of the Markdown content.
 
 Frontmatter is only supported for Markdown files and is ignored in HTML files.
+
+## Layouts
+
+Evoke uses a simple layout system to help you create consistent page structures. By default, Evoke will look for a `_layout.html` file in the same directory as your content file. If it doesn't find one, it will look in the parent directory, and so on, all the way up to the `content` directory.
+
+### Example
+
+Consider the following directory structure:
+
+```
+content/
+├── _layout.html
+└── blog/
+    ├── _layout.html
+    └── post-1.md
+```
+
+In this example, `post-1.md` will be rendered using the `blog/_layout.html` file. If `blog/_layout.html` didn't exist, it would be rendered using `content/_layout.html`.
+
+This allows you to create a default layout for your entire site, and then override it for specific sections of your site.

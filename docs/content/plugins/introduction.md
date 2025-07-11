@@ -28,12 +28,13 @@ Plugins can execute code at specific points in the build process using the follo
 
 ## The Plugin Interface
 
-All plugins must implement the `Plugin` service, which is defined in the `plugin.proto` file. You can find the full definition of the service and its messages in the [Plugin Service Definition](./plugin-service-definition.md) documentation.
+All plugins must implement the `Plugin` service, which is defined in the `plugin.proto` file. You can find the full definition of the service and its messages in the [Plugin Service Definition](./plugin-service-definition.html) documentation.
 
 ## Getting Started with Plugins
 
 To learn how to create your own plugins, check out the following guides:
 
-- **[Creating Plugins](./creating-plugins.md):** A step-by-step guide to creating your first plugin.
-- **[Example Plugin](./example-plugin.md):** A practical example of a plugin that adds a new CLI command.
-- **[Building and Installing](./building-and-installing.md):** Learn how to build and install plugins for your projects.
+- **[Creating Plugins](./creating-plugins.html):** A step-by-step guide to creating your first plugin.
+- **[Example Plugin](./example-plugin.html):** A practical example of a plugin that adds a new CLI command.
+- **[Building and Installing](./building-and-installing.html):** Learn how to build and install plugins for your projects.
+

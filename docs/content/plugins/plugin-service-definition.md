@@ -17,33 +17,33 @@ service Plugin {
 
   // Called once before the entire build process begins.
   // Useful for setup tasks or pre-build validation.
-  rpc OnPreBuild(PreBuildRequest) returns (PreBuildResponse);
+  rpc OnPreBuild(OnPreBuildRequest) returns (OnPreBuildResponse);
 
   // Called after the configuration file (evoke.yaml) is loaded.
   // Allows plugins to read or even modify the configuration.
-  rpc OnConfigLoaded(ConfigLoadedRequest) returns (ConfigLoadedResponse);
+  rpc OnConfigLoaded(OnConfigLoadedRequest) returns (OnConfigLoadedResponse);
 
   // Called after the 'public' directory has been copied to 'dist'.
-  rpc OnPublicAssetsCopied(PublicAssetsCopiedRequest) returns (PublicAssetsCopiedResponse);
+  rpc OnPublicAssetsCopied(OnPublicAssetsCopiedRequest) returns (OnPublicAssetsCopiedResponse);
 
   // --- Content Processing Hooks ---
 
   // Called for each content file after it's read from disk but before any processing.
   // Allows modification of the raw file content.
-  rpc OnContentLoaded(ContentFile) returns (ContentFile);
+  rpc OnContentLoaded(OnContentLoadedRequest) returns (OnContentLoadedResponse);
 
   // Called before the Markdown (or other format) content is rendered to HTML.
   // A plugin could use this to implement a custom renderer.
-  rpc OnContentRender(ContentFile) returns (ContentFile);
+  rpc OnContentRender(OnContentRenderRequest) returns (OnContentRenderResponse);
 
   // Called after content is rendered to HTML but before it's placed in a layout.
   // Useful for post-processing the core HTML content.
-  rpc OnHTMLRendered(ContentFile) returns (ContentFile);
+  rpc OnHTMLRendered(OnHTMLRenderedRequest) returns (OnHTMLRenderedResponse);
 
   // --- Finalization Hooks ---
 
   // Called once after all content has been processed and written to disk.
-  rpc OnPostBuild(PostBuildRequest) returns (PostBuildResponse);
+  rpc OnPostBuild(OnPostBuildRequest) returns (OnPostBuildResponse);
 }
 
 // Represents a file being processed. This message will be reused for
@@ -55,20 +55,55 @@ message ContentFile {
   bytes content = 2;
 }
 
-// Placeholder request/response messages for other hooks.
-// These can be expanded later with relevant data if needed.
-message PreBuildRequest {}
-message PreBuildResponse {}
-message ConfigLoadedRequest {
-  // The configuration data as a JSON string.
-  string config_json = 1;
+// Represents an asset being processed by a custom pipeline.
+message Asset {
+  string path = 1;
+  bytes content = 2;
+  string pipeline_name = 3;
 }
-message ConfigLoadedResponse {
-  // The potentially modified configuration data.
-  string config_json = 1;
+
+// Represents a custom pipeline that can be registered by a plugin.
+message Pipeline {
+  string name = 1;
+  repeated string extensions = 2;
 }
-message PublicAssetsCopiedRequest {}
-message PublicAssetsCopiedResponse {}
-message PostBuildRequest {}
-message PostBuildResponse {}
-```
+
+message OnPreBuildRequest {}
+message OnPreBuildResponse {}
+
+message OnConfigLoadedRequest {
+  bytes config = 1;
+}
+message OnConfigLoadedResponse {
+  bytes config = 1;
+}
+
+message OnPublicAssetsCopiedRequest {}
+message OnPublicAssetsCopiedResponse {}
+
+message OnContentLoadedRequest {
+  string path = 1;
+  bytes content = 2;
+}
+message OnContentLoadedResponse {
+  bytes content = 1;
+}
+
+message OnContentRenderRequest {
+  string path = 1;
+  bytes content = 2;
+}
+message OnContentRenderResponse {
+  bytes content = 1;
+}
+
+message OnHTMLRenderedRequest {
+  string path = 1;
+  bytes content = 2;
+}
+message OnHTMLRenderedResponse {
+  bytes content = 1;
+}
+
+message OnPostBuildRequest {}
+message OnPostBuildResponse {}
