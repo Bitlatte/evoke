@@ -37,6 +37,8 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
+    files:
+      - "man/*"
 
 changelog:
   sort: asc
@@ -44,6 +46,21 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+nfpms:
+  - id: "evoke"
+    package_name: "evoke"
+    homepage: "https://github.com/Bitlatte/evoke"
+    description: "A simple static site generator"
+    maintainer: "Bitlatte <cobymckinney2025@gmail.com>"
+    license: "MIT"
+    formats:
+      - "deb"
+      - "rpm"
+    bindir: "/usr/local/bin"
+    contents:
+      - src: "man/evoke.1"
+        dst: "/usr/local/share/man/man1/evoke.1"
 
 release:
   footer: >-
