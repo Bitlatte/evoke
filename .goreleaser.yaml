@@ -17,7 +17,7 @@ before:
 
 builds:
   - id: "evoke"
-    main: ./cmd/evoke
+    main: ./cmd/evoke/main.go
     env:
       - CGO_ENABLED=0
     ldflags:
