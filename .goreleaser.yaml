@@ -38,7 +38,8 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     files:
-      - "man/*"
+      - LICENSE
+      - README.md
 
 changelog:
   sort: asc

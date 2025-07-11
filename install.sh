@@ -63,5 +63,15 @@ echo "Installing Evoke to /usr/local/bin..."
 sudo mv evoke /usr/local/bin/evoke
 chmod +x /usr/local/bin/evoke
 
+# Install the man page
+if [ -f "man/evoke.1" ]; then
+    echo "Installing man page..."
+    if [ ! -d "/usr/local/share/man/man1" ]; then
+        sudo mkdir -p /usr/local/share/man/man1
+    fi
+    sudo mv man/evoke.1 /usr/local/share/man/man1/evoke.1
+    rm -r man
+fi
+
 echo "Evoke has been installed successfully."
 echo "Run 'evoke --version' to verify the installation."
