@@ -14,6 +14,7 @@ import (
 
 	"github.com/Bitlatte/evoke/pkg/config"
 	"github.com/Bitlatte/evoke/pkg/content"
+	"github.com/Bitlatte/evoke/pkg/defaults"
 	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/Bitlatte/evoke/pkg/pipelines"
 	"github.com/Bitlatte/evoke/pkg/plugins"
@@ -253,6 +254,9 @@ func getLayouts(path string, p *partials.Partials) []string {
 		}
 		currentDir = filepath.Dir(currentDir)
 	}
+	if len(layouts) == 0 {
+		return []string{"default"}
+	}
 	return layouts
 }
 
@@ -266,22 +270,35 @@ func processLayouts(layouts []string, content []byte, frontMatter map[string]any
 		if err != nil {
 			return nil, err
 		}
-		if _, err = t.Template.ParseFiles(layoutPath); err != nil {
-			return nil, err
+
+		if layoutPath == "default" {
+			if _, err = t.Template.Parse(defaults.Layout); err != nil {
+				return nil, err
+			}
+		} else {
+			if _, err = t.Template.ParseFiles(layoutPath); err != nil {
+				return nil, err
+			}
 		}
 
 		data := struct {
-			Global  map[string]any
+			Site    map[string]any
 			Page    map[string]any
 			Content template.HTML
 		}{
-			Global:  config,
+			Site:    config,
 			Page:    frontMatter,
 			Content: template.HTML(processedContent),
 		}
 
-		if err := t.Template.ExecuteTemplate(layoutContent, filepath.Base(layoutPath), data); err != nil {
-			return nil, err
+		if layoutPath == "default" {
+			if err := t.Template.Execute(layoutContent, data); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := t.Template.ExecuteTemplate(layoutContent, filepath.Base(layoutPath), data); err != nil {
+				return nil, err
+			}
 		}
 		processedContent = layoutContent.Bytes()
 	}

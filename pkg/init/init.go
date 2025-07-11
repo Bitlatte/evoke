@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Bitlatte/evoke/pkg/defaults"
 	"github.com/charmbracelet/huh"
 )
 
@@ -64,16 +65,7 @@ func Run() error {
 	}
 
 	// Create content/_layout.html.
-	layoutHTML := []byte(`<!DOCTYPE html>
-<html>
-<head>
-	<title>{{ .Site.Name }}</title>
-</head>
-<body>
-	{{ .Content }}
-</body>
-</html>`)
-	if err := os.WriteFile(fmt.Sprintf("%s/content/_layout.html", directory), layoutHTML, 0644); err != nil {
+	if err := os.WriteFile(fmt.Sprintf("%s/content/_layout.html", directory), []byte(defaults.Layout), 0644); err != nil {
 		return err
 	}
 
