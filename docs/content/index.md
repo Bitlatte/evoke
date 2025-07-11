@@ -12,12 +12,12 @@ Evoke is the result of that vision. It's a tool that I use every day to build my
 
 Evoke is built around a few core concepts that make it powerful and easy to use. Understanding these concepts will help you get the most out of Evoke.
 
-- **[Build Process](./core-concepts/build-process.md):** Learn how Evoke takes your content and turns it into a static website.
-- **[Configuration](./core-concepts/configuration.md):** Discover how to customize your project with the `evoke.yaml` file.
-- **[Content](./core-concepts/content.md):** Find out how to create and organize your content using HTML and Markdown.
-- **[Directory Structure](./core-concepts/directory-structure.md):** Understand the purpose of each directory in an Evoke project.
-- **[Partials](./core-concepts/partials.md):** Learn how to create reusable snippets of HTML.
-- **[Performance](./core-concepts/performance.md):** See what makes Evoke so fast and efficient.
+- **[Build Process](./core-concepts/build-process.html):** Learn how Evoke takes your content and turns it into a static website.
+- **[Configuration](./core-concepts/configuration.html):** Discover how to customize your project with the `evoke.yaml` file.
+- **[Content](./core-concepts/content.html):** Find out how to create and organize your content using HTML and Markdown.
+- **[Directory Structure](./core-concepts/directory-structure.html):** Understand the purpose of each directory in an Evoke project.
+- **[Partials](./core-concepts/partials.html):** Learn how to create reusable snippets of HTML.
+- **[Performance](./core-concepts/performance.html):** See what makes Evoke so fast and efficient.
 
 ## Quick Start
 
