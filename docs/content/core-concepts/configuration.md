@@ -23,18 +23,36 @@ social:
 
 ### Accessing Configuration Values in Templates
 
-You can access the values from your `evoke.yaml` file in your templates using the `.` (dot) notation. For example, to display the site name and author, you would use the following in your HTML files:
+All values from your `evoke.yaml` file are available in your templates under the `.Site` object. For example, to display the site name and author from the example above, you would use the following in your HTML files:
 
 ```html
-<h1>{{ .siteName }}</h1>
-<p>By {{ .author }}</p>
+<h1>{{ .Site.siteName }}</h1>
+<p>By {{ .Site.author }}</p>
 ```
 
 To access nested values, like the social media links, you can chain the keys:
 
 ```html
-<a href="https://twitter.com/{{ .social.twitter }}">Twitter</a>
-<a href="https://github.com/{{ .social.github }}">GitHub</a>
+<a href="https://twitter.com/{{ .Site.social.twitter }}">Twitter</a>
+<a href="https://github.com/{{ .Site.social.github }}">GitHub</a>
 ```
 
 This flexibility allows you to create highly customized and dynamic templates with ease.
+
+### Using the `Global` Key
+
+For site-wide variables, it's a good practice to nest them under a `Global` key in your `evoke.yaml` file. This helps to keep your configuration organized.
+
+```yaml
+Global:
+  siteName: "My Awesome Site"
+  author: "John Doe"
+```
+
+When you use the `Global` key, you'll need to access these variables through the `.Site` object in your templates. Here’s how you would access the `siteName`:
+
+```html
+<h1>{{ .Site.Global.siteName }}</h1>
+```
+
+This approach ensures that your global variables are neatly namespaced and easy to manage.

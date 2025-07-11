@@ -15,7 +15,8 @@ There are more things we could mention but I think its best to let you experienc
 ## Usage
 
 - `evoke build`: builds your content into static HTML.
-- `evoke plugin get [url]`: get a new plugin from a url.
+- `evoke serve`: builds and serves the site on a local development server.
+- `evoke init`: initializes a new Evoke project.
 
 ## Getting Started
 
@@ -45,7 +46,15 @@ go install github.com/Bitlatte/evoke/cmd/evoke@latest
 
 ### Project Structure
 
-An evoke project is simple to get started. All you need is the following folder structure and you're good to go. Here is an example of an evoke project:
+The easiest way to start a new Evoke project is to use the `init` command.
+
+```bash
+mkdir my-project
+cd my-project
+evoke init
+```
+
+This will create a basic project structure for you. Here is an example of an evoke project:
 
 ```
 .
@@ -119,17 +128,11 @@ Outside of this there arent many rules that need followed by the core program. A
 
 ## Plugins
 
-Evoke allows for custom plugins to be loaded on a per project basis. Just add a `plugins` folder to the project and add plugins using the command line. Plugins are typically loaded from a url using the cli:
+Evoke allows for custom plugins to be loaded on a per project basis. Just add a `plugins` folder to the project and add your plugins.
 
-```
-evoke plugin get [url]
-```
-
-This will automatically pull the plugin and build it. Plugins can hook into the following:
+Plugins can hook into the following:
 - BeforeBuild: plugin will run before the core build process
 - AfterBuild: plugin will run after the core build process
-
-While not currently available, there are plans for an "plugin library" if you will. Basically just a place with tons of plugins.
 
 ## Wraping Up
 

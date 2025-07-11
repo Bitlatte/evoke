@@ -32,26 +32,19 @@ go install github.com/Bitlatte/evoke/cmd/evoke@latest
 
 ## Your First Project
 
-Evoke is designed to work with minimal setup. Here's how to create a basic site:
+The easiest way to start a new Evoke project is to use the `init` command.
 
-1.  **Create a Project Directory:**
+1.  **Initialize the Project:**
 
-    ```bash
-    mkdir my-awesome-site
-    cd my-awesome-site
-    ```
-
-2.  **Add a Content Directory:**
-
-    This is the only directory you need to get started.
+    Run the `evoke init` command. This will create a basic project structure for you.
 
     ```bash
-    mkdir content
+    evoke init
     ```
 
-3.  **Create Your First Page:**
+2.  **Create Your First Page:**
 
-    Create a file named `index.md` inside the `content` directory:
+    You can now create a file named `index.md` inside the `content` directory:
 
     ```markdown
     # Welcome to My Awesome Site!
@@ -59,7 +52,7 @@ Evoke is designed to work with minimal setup. Here's how to create a basic site:
     This is my first page. I can use **Markdown** to format my text.
     ```
 
-4.  **Build Your Site:**
+3.  **Build Your Site:**
 
     Run the `evoke build` command from your project's root directory:
 

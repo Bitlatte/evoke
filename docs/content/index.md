@@ -33,17 +33,15 @@ go install github.com/Bitlatte/evoke/cmd/evoke@latest
 
 ### Create a New Project
 
-To create a new project, simply create a new directory and add a `content` directory inside it.
+To create a new project, use the `evoke init` command.
 
 ```bash
-mkdir my-project
-cd my-project
-mkdir content
+evoke init
 ```
 
 ### Create Some Content
 
-Create a new file in the `content` directory called `index.md` and add some content to it.
+In the `content` directory, modify the `index.md` file and add some content to it.
 
 ```markdown
 # Hello, World!
