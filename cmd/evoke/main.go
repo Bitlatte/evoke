@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/Bitlatte/evoke/pkg/build"
+	init_pkg "github.com/Bitlatte/evoke/pkg/init"
 	"github.com/Bitlatte/evoke/pkg/serve"
 	"github.com/urfave/cli/v3"
 )
@@ -40,6 +41,13 @@ func main() {
 					port := cmd.Value("port").(int)
 					fmt.Printf("Serving on port %d\n", port)
 					return serve.Serve(port)
+				},
+			},
+			{
+				Name:  "init",
+				Usage: "Initialize a new project",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return init_pkg.Run()
 				},
 			},
 		},
