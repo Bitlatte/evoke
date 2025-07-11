@@ -1,3 +1,4 @@
+// Package defaults provides default values for evoke.
 package defaults
 
 // Layout is the default layout.html content.

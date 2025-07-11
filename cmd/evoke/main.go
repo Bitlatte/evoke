@@ -1,3 +1,4 @@
+// The main package for the evoke command.
 package main
 
 import (
@@ -14,6 +15,8 @@ import (
 
 var version = "dev"
 
+// main is the entry point for the evoke command. It sets up the CLI commands
+// and executes them.
 func main() {
 	cmd := &cli.Command{
 		Name:    "evoke",

@@ -1,3 +1,4 @@
+// Package partials provides functionality for loading and managing HTML partials.
 package partials
 
 import (
@@ -6,10 +7,12 @@ import (
 	"path/filepath"
 )
 
+// Partials holds the parsed partial templates.
 type Partials struct {
 	*template.Template
 }
 
+// LoadPartials walks the "partials" directory and parses all the files as templates.
 func LoadPartials() (*Partials, error) {
 	t := template.New("")
 	err := filepath.Walk("partials", func(path string, info os.FileInfo, err error) error {
@@ -41,6 +44,7 @@ func LoadPartials() (*Partials, error) {
 	return &Partials{t}, nil
 }
 
+// Clone creates a deep copy of the Partials templates.
 func (p *Partials) Clone() (*Partials, error) {
 	if p.Template == nil {
 		return &Partials{template.New("")}, nil

@@ -1,3 +1,4 @@
+// Package pipelines provides the content processing pipelines for evoke.
 package pipelines
 
 import (

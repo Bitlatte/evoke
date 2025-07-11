@@ -1,3 +1,4 @@
+// Package util provides utility functions for the evoke static site generator.
 package util
 
 import (
@@ -13,6 +14,7 @@ var bufferPool = sync.Pool{
 	},
 }
 
+// CopyDirectory copies a directory from src to dest.
 func CopyDirectory(src, dest string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -31,6 +33,7 @@ func CopyDirectory(src, dest string) error {
 	})
 }
 
+// CopyFile copies a file from src to dest.
 func CopyFile(src, dest string) error {
 	sourceFile, err := os.Open(src)
 	if err != nil {

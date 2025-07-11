@@ -1,3 +1,4 @@
+// Package pipelines provides the content processing pipelines for evoke.
 package pipelines
 
 import (
@@ -60,6 +61,7 @@ func (p *MarkdownPipeline) Process(asset *Asset) (*Asset, error) {
 	return asset, err
 }
 
+// parseFrontMatter parses the front matter from the content.
 func (p *MarkdownPipeline) parseFrontMatter(content []byte) (map[string]interface{}, []byte, error) {
 	var frontMatter map[string]interface{}
 	body := content

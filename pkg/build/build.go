@@ -1,3 +1,4 @@
+// Package build provides the functionality to build the site.
 package build
 
 import (
@@ -239,6 +240,7 @@ func RunOnPostBuildHooks(loadedPlugins []plugins.Plugin) error {
 	return nil
 }
 
+// getLayouts returns the layouts for a given path.
 func getLayouts(path string, p *partials.Partials) []string {
 	// This is a simplified version of the original getLayouts function.
 	// A more robust implementation would cache the layouts.
@@ -260,6 +262,7 @@ func getLayouts(path string, p *partials.Partials) []string {
 	return layouts
 }
 
+// processLayouts processes the layouts for a given content file.
 func processLayouts(layouts []string, content []byte, frontMatter map[string]any, p *partials.Partials, config map[string]any) ([]byte, error) {
 	processedContent := content
 
@@ -306,6 +309,7 @@ func processLayouts(layouts []string, content []byte, frontMatter map[string]any
 	return processedContent, nil
 }
 
+// Build builds the site.
 func Build(outputDir string) error {
 	// Load plugins
 	loadedPlugins, err := LoadPlugins()

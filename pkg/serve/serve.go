@@ -1,3 +1,4 @@
+// Package serve provides the functionality to serve the site and watch for changes.
 package serve
 
 import (
@@ -62,6 +63,7 @@ func Serve(port int) error {
 	return nil
 }
 
+// watchRecursive recursively watches a directory for changes.
 func watchRecursive(watcher *fsnotify.Watcher, path string) error {
 	return filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -76,6 +78,7 @@ func watchRecursive(watcher *fsnotify.Watcher, path string) error {
 	})
 }
 
+// startServer starts the web server.
 func startServer(port int) {
 	portStr := strconv.Itoa(port)
 	log.Printf("Starting server on :%s", portStr)
@@ -86,6 +89,7 @@ func startServer(port int) {
 	}
 }
 
+// wsHandler handles websocket connections.
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -111,6 +115,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// broadcast sends a message to all connected websocket clients.
 func broadcast(message []byte) {
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
@@ -123,6 +128,7 @@ func broadcast(message []byte) {
 	}
 }
 
+// memoryFileServer serves files from memory.
 func memoryFileServer(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	if path == "/" {
@@ -148,6 +154,7 @@ func memoryFileServer(w http.ResponseWriter, r *http.Request) {
 	w.Write(content)
 }
 
+// buildAndCache builds the site and caches it in memory.
 func buildAndCache() error {
 	buildMutex.Lock()
 	defer buildMutex.Unlock()
@@ -185,6 +192,7 @@ func buildAndCache() error {
 	})
 }
 
+// watchFiles watches for file changes and rebuilds the site.
 func watchFiles(watcher *fsnotify.Watcher) {
 	var timer *time.Timer
 	var lastBuildTime time.Time

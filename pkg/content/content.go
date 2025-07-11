@@ -13,24 +13,35 @@ import (
 	"github.com/yuin/goldmark"
 )
 
+// Content is the main struct for handling content processing.
 type Content struct {
-	Partials      *partials.Partials
-	Goldmark      goldmark.Markdown
-	Config        map[string]any
-	Plugins       []plugins.Plugin
-	LayoutCache   sync.Map
+	// Partials are the HTML partials that can be used in layouts.
+	Partials *partials.Partials
+	// Goldmark is the Goldmark instance used for rendering Markdown.
+	Goldmark goldmark.Markdown
+	// Config is the site configuration.
+	Config map[string]any
+	// Plugins are the plugins that are currently loaded.
+	Plugins []plugins.Plugin
+	// LayoutCache is a cache of layouts that have been found for a given directory.
+	LayoutCache sync.Map
+	// TemplateCache is a cache of templates that have been parsed.
 	TemplateCache sync.Map
-	Pipelines     []pipelines.Pipeline
-	OutputDir     string
-	bufferPool    sync.Pool
+	// Pipelines are the content pipelines that are currently loaded.
+	Pipelines []pipelines.Pipeline
+	// OutputDir is the directory where the site will be built.
+	OutputDir  string
+	bufferPool sync.Pool
 }
 
+// templateData is the data that is passed to the layout templates.
 type templateData struct {
 	Global  map[string]any
 	Page    map[string]any
 	Content template.HTML
 }
 
+// New creates a new Content struct.
 func New(outputDir string, config map[string]any, partials *partials.Partials, gm goldmark.Markdown, plugins []plugins.Plugin, pipelines []pipelines.Pipeline) (*Content, error) {
 	return &Content{
 		Partials:  partials,
@@ -47,6 +58,7 @@ func New(outputDir string, config map[string]any, partials *partials.Partials, g
 	}, nil
 }
 
+// GetLayouts returns the layouts for a given path.
 func (c *Content) GetLayouts(path string) []string {
 	dir := filepath.Dir(path)
 	if layouts, ok := c.LayoutCache.Load(dir); ok {
@@ -69,6 +81,7 @@ func (c *Content) GetLayouts(path string) []string {
 	return layouts
 }
 
+// ProcessLayouts processes the layouts for a given content file.
 func (c *Content) ProcessLayouts(layouts []string, content []byte, frontMatter map[string]any) ([]byte, error) {
 	processedContent := content
 
@@ -100,6 +113,7 @@ func (c *Content) ProcessLayouts(layouts []string, content []byte, frontMatter m
 	return processedContent, nil
 }
 
+// GetTemplate returns a template from the cache or parses it if it's not in the cache.
 func (c *Content) GetTemplate(layout string) (*template.Template, error) {
 	if t, ok := c.TemplateCache.Load(layout); ok {
 		return t.(*template.Template), nil

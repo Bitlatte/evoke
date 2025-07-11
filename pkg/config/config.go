@@ -1,3 +1,4 @@
+// Package config provides functionality for loading the evoke configuration.
 package config
 
 import (
@@ -6,6 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// LoadConfig loads the evoke.yaml file and returns it as a map.
 func LoadConfig() (map[string]interface{}, error) {
 	configFile, err := os.ReadFile("evoke.yaml")
 	if err != nil {

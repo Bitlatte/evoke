@@ -1,3 +1,4 @@
+// Package init provides the functionality to initialize a new evoke project.
 package init
 
 import (
