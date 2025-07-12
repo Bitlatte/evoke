@@ -1,17 +1,24 @@
-// Package util provides utility functions for the evoke static site generator.
 package util
 
 import (
 	"io"
 	"os"
 	"path/filepath"
-	"sync"
+	"strings"
 )
 
-var bufferPool = sync.Pool{
-	New: func() interface{} {
-		return make([]byte, 32*1024)
-	},
+// ToOutputPath converts a content path to an output path, removing any route
+// groups.
+func ToOutputPath(path string) string {
+	parts := strings.Split(path, string(filepath.Separator))
+	var newParts []string
+	for _, part := range parts {
+		if len(part) > 2 && part[0] == '(' && part[len(part)-1] == ')' {
+			continue
+		}
+		newParts = append(newParts, part)
+	}
+	return filepath.Join(newParts...)[len("content/"):]
 }
 
 // CopyDirectory copies a directory from src to dest.
@@ -21,15 +28,18 @@ func CopyDirectory(src, dest string) error {
 			return err
 		}
 
-		// Create a parallel structure in the destination
-		destPath := filepath.Join(dest, path[len(src):])
+		// Create a new path in the destination directory
+		newPath := filepath.Join(dest, path[len(src):])
 
 		if info.IsDir() {
-			return os.MkdirAll(destPath, info.Mode())
+			os.MkdirAll(newPath, info.Mode())
+		} else {
+			if err := CopyFile(path, newPath); err != nil {
+				return err
+			}
 		}
 
-		// Copy the file
-		return CopyFile(path, destPath)
+		return nil
 	})
 }
 
@@ -47,9 +57,6 @@ func CopyFile(src, dest string) error {
 	}
 	defer destFile.Close()
 
-	buf := bufferPool.Get().([]byte)
-	defer bufferPool.Put(buf)
-
-	_, err = io.CopyBuffer(destFile, sourceFile, buf)
+	_, err = io.Copy(destFile, sourceFile)
 	return err
 }

@@ -294,7 +294,7 @@ func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig
 							return
 						}
 
-						outputPath := filepath.Join(contentProcessor.OutputDir, processedAsset.Path[len("content"):])
+						outputPath := filepath.Join(contentProcessor.OutputDir, util.ToOutputPath(processedAsset.Path))
 						if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 							handleError(err)
 							return
@@ -383,10 +383,16 @@ func RunOnPostBuildHooks(loadedPlugins []plugins.Plugin) error {
 
 // getLayouts returns the layouts for a given path.
 func getLayouts(path string, p *partials.Partials) []string {
-	// This is a simplified version of the original getLayouts function.
-	// A more robust implementation would cache the layouts.
 	var layouts []string
 	currentDir := filepath.Dir(path)
+
+	// Check for a layout override file, e.g. !layout.html. If found, use it and
+	// stop searching.
+	overrideLayoutPath := filepath.Join(currentDir, "!layout.html")
+	if _, err := os.Stat(overrideLayoutPath); err == nil {
+		return []string{overrideLayoutPath}
+	}
+
 	for {
 		layoutPath := filepath.Join(currentDir, "_layout.html")
 		if _, err := os.Stat(layoutPath); err == nil {
@@ -397,9 +403,11 @@ func getLayouts(path string, p *partials.Partials) []string {
 		}
 		currentDir = filepath.Dir(currentDir)
 	}
+
 	if len(layouts) == 0 {
 		return []string{"default"}
 	}
+
 	return layouts
 }
 
