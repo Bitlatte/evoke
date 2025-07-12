@@ -1,7 +1,3 @@
----
-title: "Getting Started with Evoke"
----
-
 # Getting Started with Evoke
 
 Welcome to Evoke! This guide will walk you through installing Evoke and creating your first website.

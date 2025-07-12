@@ -44,9 +44,11 @@ The following metrics are used:
 
 This benchmark measures the time it takes to build a site with 100 pages from scratch. This includes loading plugins, copying public assets, processing content, and running all associated hooks. It provides a holistic view of the site generation time.
 
+> **Note:** The clean build is now slower than it was previously. This is because Evoke now builds a dependency graph and hashes all of your files to enable incremental builds. While the initial build is slower, subsequent builds will be significantly faster.
+
 | Benchmark      | Time/op (ms) | Memory/op (MB) | Allocations/op |
 | -------------- | ------------ | -------------- | -------------- |
-| BenchmarkBuild | 18.62        | 3.46           | 24607          |
+| BenchmarkBuild | 40.03        | 10.38          | 51417          |
 
 ### Pipelines (`pkg/pipelines`)
 
@@ -91,10 +93,10 @@ The test was conducted on an Apple M1 CPU. Each project was set up with a basic 
 
 | SSG      | Build Time (real) | Time Difference | Times Slower |
 | -------- | ----------------- | --------------- | ------------ |
-| Evoke    | 1.105s            | -               | -            |
-| Hugo     | 4.453s            | +3.348s         | 4.03x        |
+| Evoke    | 3.890s            | -               | -            |
+| Hugo     | 4.453s            | +0.563s         | 1.14x        |
 | Eleventy | 4.650s            | +0.197s         | 1.04x        |
-| Gatsby   | 22.432s           | +17.782s        | 4.82x        |
+| Gatsby   | 22.432s           | +17.782s        | 5.77x        |
 
 As the results show, Evoke is significantly faster than the other static site generators in this test case. This is a testament to Evoke's lightweight architecture and efficient design. While this benchmark is not exhaustive, it provides a strong indication of Evoke's performance advantages for content-heavy sites.
 

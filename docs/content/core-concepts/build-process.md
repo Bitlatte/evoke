@@ -17,3 +17,11 @@ When you run `evoke build`, the following steps are performed:
 7.  **Process Content:** Evoke processes all of the content in the `content` directory. This is where you should put all of the pages for your site. Evoke supports both Markdown and HTML files.
 
 8.  **Run AfterBuild Hooks:** Evoke runs the `AfterBuild` hook for each loaded plugin. This allows plugins to perform any necessary cleanup after the build process is complete.
+
+## Incremental Builds
+
+To improve build times, Evoke uses an incremental build process. This means that it only rebuilds files that have changed since the last build. This is accomplished by storing a cache of file hashes in the `dist/.cache` file.
+
+When you run `evoke build`, Evoke first builds a dependency graph of all the files in your `content` and `partials` directories. It then compares the hashes of the files in the dependency graph to the hashes in the cache. If a file's hash has changed, or if the file is not in the cache, Evoke will rebuild the file and any files that depend on it.
+
+This process is completely automatic and requires no configuration. However, if you ever need to force a full rebuild, you can do so by deleting the `dist/.cache` file or by running the build with the `--clean` flag.
