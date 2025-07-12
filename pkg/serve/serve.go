@@ -3,6 +3,7 @@ package serve
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,11 +14,19 @@ import (
 	"sync"
 	"time"
 
+	"encoding/json"
+
 	"github.com/Bitlatte/evoke/pkg/build"
+
 	"github.com/Bitlatte/evoke/pkg/logger"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/websocket"
 )
+
+type wsMessage struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
 
 var (
 	buildMutex    sync.Mutex
@@ -30,6 +39,9 @@ var (
 	clients   = make(map[*websocket.Conn]bool)
 	clientsMu sync.Mutex
 )
+
+//go:embed devtools.js
+var devtoolsJS []byte
 
 // Serve starts a web server and watches for changes.
 func Serve(port int) error {
@@ -97,12 +109,14 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Logger.Error("Failed to upgrade connection", "error", err)
 		return
 	}
+	logger.Logger.Debug("WebSocket client connected", "remoteAddr", conn.RemoteAddr())
 
 	clientsMu.Lock()
 	clients[conn] = true
 	clientsMu.Unlock()
 
 	defer func() {
+		logger.Logger.Debug("WebSocket client disconnected", "remoteAddr", conn.RemoteAddr())
 		clientsMu.Lock()
 		delete(clients, conn)
 		clientsMu.Unlock()
@@ -117,12 +131,23 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // broadcast sends a message to all connected websocket clients.
-func broadcast(message []byte) {
+func broadcast(messageType string, data interface{}) {
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
-	logger.Logger.Debug("Broadcasting message to clients", "clients", len(clients))
+
+	msg := wsMessage{
+		Type: messageType,
+		Data: data,
+	}
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		logger.Logger.Error("Failed to marshal websocket message", "error", err)
+		return
+	}
+
+	logger.Logger.Debug("Broadcasting message to clients", "clients", len(clients), "type", messageType)
 	for client := range clients {
-		if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
+		if err := client.WriteMessage(websocket.TextMessage, payload); err != nil {
 			logger.Logger.Error("Failed to write message to client", "error", err)
 			client.Close()
 			delete(clients, client)
@@ -138,18 +163,27 @@ func memoryFileServer(w http.ResponseWriter, r *http.Request) {
 	}
 	path = strings.TrimPrefix(path, "/")
 
+	logger.Logger.Debug("Serving file", "path", path)
+
+	if path == "devtools.js" {
+		w.Header().Set("Content-Type", "application/javascript")
+		w.Write(devtoolsJS)
+		return
+	}
+
 	memoryFSMutex.RLock()
 	content, ok := memoryFS[path]
 	memoryFSMutex.RUnlock()
 
 	if !ok {
+		logger.Logger.Warn("File not found", "path", path)
 		http.NotFound(w, r)
 		return
 	}
 
 	// Inject reload script
 	if strings.HasSuffix(path, ".html") {
-		content = bytes.Replace(content, []byte("</body>"), []byte("<script>var conn=new WebSocket(\"ws://\"+location.host+\"/ws\");conn.onmessage=function(e){if(e.data===\"reload\"){location.reload()}};</script></body>"), 1)
+		content = bytes.Replace(content, []byte("</body>"), []byte("<script src=\"/devtools.js\"></script></body>"), 1)
 	}
 
 	w.Header().Set("Content-Type", http.DetectContentType(content))
@@ -197,40 +231,84 @@ func buildAndCache() error {
 
 // watchFiles watches for file changes and rebuilds the site.
 func watchFiles(watcher *fsnotify.Watcher) {
-	var timer *time.Timer
-	var lastBuildTime time.Time
+	var (
+		buildTicker = time.NewTicker(1 * time.Second)
+		buildEvents = make(map[string]fsnotify.Event)
+		mu          sync.Mutex
+	)
+	defer buildTicker.Stop()
+
 	for {
 		select {
 		case event, ok := <-watcher.Events:
 			if !ok {
 				return
 			}
+			logger.Logger.Debug("Received event", "event", event)
 
-			isRelevantEvent := event.Op&fsnotify.Write == fsnotify.Write ||
+			// Filter out events that are not relevant
+			isRelevant := event.Op&fsnotify.Write == fsnotify.Write ||
 				event.Op&fsnotify.Create == fsnotify.Create ||
 				event.Op&fsnotify.Remove == fsnotify.Remove ||
 				event.Op&fsnotify.Rename == fsnotify.Rename
-
-			if !isRelevantEvent {
+			if !isRelevant {
 				continue
 			}
 
-			if time.Since(lastBuildTime) < 2*time.Second {
+			mu.Lock()
+			buildEvents[event.Name] = event
+			mu.Unlock()
+
+		case <-buildTicker.C:
+			mu.Lock()
+			if len(buildEvents) == 0 {
+				mu.Unlock()
 				continue
 			}
-			if timer != nil {
-				timer.Stop()
+			logger.Logger.Info("Change detected, rebuilding...", "files", len(buildEvents))
+			buildEvents = make(map[string]fsnotify.Event)
+			mu.Unlock()
+
+			// Check if only CSS files have changed
+			onlyCSS := true
+			cssFiles := []string{}
+			for name := range buildEvents {
+				if strings.HasSuffix(name, ".css") {
+					cssFiles = append(cssFiles, name)
+				} else {
+					onlyCSS = false
+					break
+				}
 			}
-			timer = time.AfterFunc(1*time.Second, func() {
-				logger.Logger.Info("Change detected, rebuilding...", "file", event.Name)
+
+			if onlyCSS {
+				logger.Logger.Info("CSS change detected, injecting new styles...")
+				for _, cssFile := range cssFiles {
+					content, err := os.ReadFile(cssFile)
+					if err != nil {
+						logger.Logger.Error("Failed to read CSS file", "file", cssFile, "error", err)
+						continue
+					}
+					relPath, err := filepath.Rel("content", cssFile)
+					if err != nil {
+						logger.Logger.Error("Failed to get relative path", "file", cssFile, "error", err)
+						continue
+					}
+					broadcast("css-update", map[string]string{
+						"path":    "/" + relPath,
+						"content": string(content),
+					})
+				}
+			} else {
 				if err := buildAndCache(); err != nil {
 					logger.Logger.Error("Error rebuilding site", "error", err)
+					broadcast("error", err.Error())
 				} else {
 					logger.Logger.Info("Site rebuilt successfully.")
-					lastBuildTime = time.Now()
-					broadcast([]byte("reload"))
+					broadcast("reload", nil)
 				}
-			})
+			}
+
 		case err, ok := <-watcher.Errors:
 			if !ok {
 				return
