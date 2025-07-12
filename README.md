@@ -21,6 +21,7 @@ There are more things we could mention but I think its best to let you experienc
 ## Getting Started
 
 ### Installation
+To generate the man pages, you will need to have `pandoc` installed.
 
 You can install Evoke in one of the following ways:
 
