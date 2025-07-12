@@ -167,7 +167,7 @@ func buildAndCache() error {
 	}
 	defer os.RemoveAll(tempDir)
 
-	if err := build.Build(tempDir); err != nil {
+	if err := build.Build(tempDir, false); err != nil {
 		return err
 	}
 

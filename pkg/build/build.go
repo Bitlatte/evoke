@@ -13,9 +13,13 @@ import (
 
 	"html/template"
 
+	"github.com/Bitlatte/evoke/pkg/cache"
 	"github.com/Bitlatte/evoke/pkg/config"
 	"github.com/Bitlatte/evoke/pkg/content"
+	"github.com/Bitlatte/evoke/pkg/dag"
 	"github.com/Bitlatte/evoke/pkg/defaults"
+	"github.com/Bitlatte/evoke/pkg/diff"
+	"github.com/Bitlatte/evoke/pkg/hash"
 	"github.com/Bitlatte/evoke/pkg/logger"
 	"github.com/Bitlatte/evoke/pkg/partials"
 	"github.com/Bitlatte/evoke/pkg/pipelines"
@@ -154,11 +158,39 @@ func ProcessContent(outputDir string, loadedConfig map[string]interface{}, t *pa
 	if err != nil {
 		return fmt.Errorf("error creating content processor: %w", err)
 	}
-	return ProcessContentWithProcessor(contentProcessor, loadedConfig)
+
+	// Create a new cache
+	c, err := cache.New(filepath.Join(outputDir, ".cache"))
+	if err != nil {
+		return fmt.Errorf("error creating cache: %w", err)
+	}
+
+	// Build the dependency graph
+	d, err := dag.BuildGraph("content", "partials")
+	if err != nil {
+		return fmt.Errorf("error building dependency graph: %w", err)
+	}
+
+	// Get the files to rebuild
+	toRebuild, err := getFilesToRebuild(c, d)
+	if err != nil {
+		return fmt.Errorf("error getting files to rebuild: %w", err)
+	}
+
+	if err := ProcessContentWithProcessor(contentProcessor, loadedConfig, toRebuild); err != nil {
+		return err
+	}
+
+	// Save the cache
+	if err := c.Save(); err != nil {
+		return fmt.Errorf("error saving cache: %w", err)
+	}
+
+	return nil
 }
 
 // ProcessContentWithProcessor processes the content with a given processor.
-func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig map[string]interface{}) error {
+func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig map[string]interface{}, toRebuild map[string]bool) error {
 	if _, statErr := os.Stat("content"); os.IsNotExist(statErr) {
 		return nil // No content directory, nothing to do.
 	}
@@ -267,9 +299,32 @@ func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig
 							handleError(err)
 							return
 						}
-						if err := os.WriteFile(outputPath, processedContent, 0644); err != nil {
-							handleError(err)
-							return
+
+						// Check if the file exists
+						if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+							// If it doesn't exist, write the whole file
+							if err := os.WriteFile(outputPath, processedContent, 0644); err != nil {
+								handleError(err)
+								return
+							}
+						} else {
+							// If it does exist, apply a patch
+							existingContent, err := os.ReadFile(outputPath)
+							if err != nil {
+								handleError(err)
+								return
+							}
+
+							newContent, err := diff.Merge(existingContent, processedContent)
+							if err != nil {
+								handleError(err)
+								return
+							}
+
+							if err := os.WriteFile(outputPath, newContent, 0644); err != nil {
+								handleError(err)
+								return
+							}
 						}
 					}
 				}
@@ -288,14 +343,16 @@ func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig
 				return ctx.Err() // Stop walking if context is cancelled
 			}
 			if !info.IsDir() && info.Name()[0] != '_' {
-				content, err := os.ReadFile(path)
-				if err != nil {
-					return err
-				}
-				select {
-				case jobs <- pipelines.Asset{Path: path, Content: bytes.NewReader(content)}:
-				case <-ctx.Done():
-					return ctx.Err()
+				if _, ok := toRebuild[path]; ok {
+					content, err := os.ReadFile(path)
+					if err != nil {
+						return err
+					}
+					select {
+					case jobs <- pipelines.Asset{Path: path, Content: bytes.NewReader(content)}:
+					case <-ctx.Done():
+						return ctx.Err()
+					}
 				}
 			}
 			return nil
@@ -393,8 +450,45 @@ func processLayouts(layouts []string, content []byte, frontMatter map[string]any
 	return processedContent, nil
 }
 
+// getFilesToRebuild returns a map of files to rebuild.
+func getFilesToRebuild(c *cache.Cache, d *dag.Graph) (map[string]bool, error) {
+	toRebuild := make(map[string]bool)
+
+	for path, node := range d.Nodes {
+		h, err := hash.New(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
+		}
+
+		if c.Get(path) != h {
+			toRebuild[path] = true
+			// If a partial is modified, we need to rebuild all of its dependents
+			if filepath.Base(filepath.Dir(path)) == "partials" {
+				for _, dependent := range d.GetDependents(node) {
+					toRebuild[dependent.Path] = true
+				}
+			}
+		}
+		c.Set(path, h)
+	}
+
+	return toRebuild, nil
+}
+
 // Build builds the site.
-func Build(outputDir string) error {
+func Build(outputDir string, clean bool) error {
+	// If clean is true, remove the cache file
+	if clean {
+		if err := os.Remove(filepath.Join(outputDir, ".cache")); err != nil {
+			if !os.IsNotExist(err) {
+				return fmt.Errorf("error removing cache: %w", err)
+			}
+		}
+	}
+
 	// Load plugins
 	loadedPlugins, err := LoadPlugins()
 	if err != nil {

@@ -31,13 +31,17 @@ func main() {
 						Name:  "verbose",
 						Usage: "Enable verbose logging",
 					},
+					&cli.BoolFlag{
+						Name:  "clean",
+						Usage: "Perform a clean build, bypassing the cache",
+					},
 				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					if cmd.Bool("verbose") {
 						logger.Logger.SetLevel(log.DebugLevel)
 					}
 					logger.Logger.Info("Starting build...")
-					err := build.Build("dist")
+					err := build.Build("dist", cmd.Bool("clean"))
 					if err != nil {
 						logger.Logger.Error("Build failed", "error", err)
 						return err
