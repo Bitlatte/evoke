@@ -1,6 +1,6 @@
-# Evoke: A Powerful, Simple, and Fast Static Site Generator
+# Evoke: The magic of a simple build.
 
-Welcome to the official documentation for Evoke, a static site generator that is small, fast, and powerful. Evoke is designed to be easy to use, with sensible defaults that allow for near-zero configuration. It also has full template support and an extension system that allows you to extend the core functionality.
+Welcome to the official documentation for Evoke. Evoke is a static site generator that operates on the principle of "It just works." It's not about complex commands or convoluted processes, but about the purity and speed of a tool so refined it feels like a natural extension of the developer's will.
 
 ## Why Evoke?
 

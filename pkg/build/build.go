@@ -474,7 +474,7 @@ func getFilesToRebuild(c *cache.Cache, d *dag.Graph) (map[string]bool, error) {
 		if c.Get(path) != h {
 			toRebuild[path] = true
 			// If a partial is modified, we need to rebuild all of its dependents
-			if filepath.Base(filepath.Dir(path)) == "partials" {
+			if filepath.Dir(path) == "partials" {
 				for _, dependent := range d.GetDependents(node) {
 					toRebuild[dependent.Path] = true
 				}

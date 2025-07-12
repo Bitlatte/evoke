@@ -266,13 +266,17 @@ func watchFiles(watcher *fsnotify.Watcher) {
 				continue
 			}
 			logger.Logger.Info("Change detected, rebuilding...", "files", len(buildEvents))
+			events := make(map[string]fsnotify.Event)
+			for k, v := range buildEvents {
+				events[k] = v
+			}
 			buildEvents = make(map[string]fsnotify.Event)
 			mu.Unlock()
 
 			// Check if only CSS files have changed
 			onlyCSS := true
 			cssFiles := []string{}
-			for name := range buildEvents {
+			for name := range events {
 				if strings.HasSuffix(name, ".css") {
 					cssFiles = append(cssFiles, name)
 				} else {
@@ -304,7 +308,7 @@ func watchFiles(watcher *fsnotify.Watcher) {
 					logger.Logger.Error("Error rebuilding site", "error", err)
 					broadcast("error", err.Error())
 				} else {
-					logger.Logger.Info("Site rebuilt successfully.")
+					logger.Logger.Info("✨ Site rebuilt successfully.")
 					broadcast("reload", nil)
 				}
 			}

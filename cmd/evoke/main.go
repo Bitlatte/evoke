@@ -52,7 +52,7 @@ func main() {
 						logger.Logger.Error("Build failed", "error", err)
 						return err
 					}
-					logger.Logger.Info("Build complete!")
+					logger.Logger.Info("✨ Build complete!")
 					return nil
 				},
 			},

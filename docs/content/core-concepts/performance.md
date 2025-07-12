@@ -26,7 +26,7 @@ Evoke's plugin system is designed to be flexible and powerful, but it's importan
 
 Here are some things to keep in mind when writing or using plugins:
 
--   **Plugin Hooks:** Plugins can "hook" into various stages of the build process. Be mindful of the hooks you use and the work you do in them. For example, a heavy computation in the `OnContentLoaded` hook will be executed for every single file, which can have a significant impact on build times.
+-   **Plugin Hooks:** Plugins can "hook" into various stages of the build process. Be mindful of the hooks you use and the work you do in them. For example, a heavy computation in a hook that runs for every file can have a significant impact on build times.
 -   **Memory Allocations:** Be mindful of memory allocations in your plugins. If you need to work with large amounts of data, consider using a `sync.Pool` to reuse buffers, just like Evoke does internally.
 -   **Caching:** If your plugin performs expensive operations, consider implementing your own caching layer to avoid redundant work.
 

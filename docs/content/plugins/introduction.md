@@ -21,9 +21,6 @@ Plugins can execute code at specific points in the build process using the follo
 - `OnPreBuild()`: This method is called before the build process begins.
 - `OnConfigLoaded()`: This method is called after the configuration is loaded, but before it is used.
 - `OnPublicAssetsCopied()`: This method is called after the public assets have been copied to the output directory.
-- `OnContentLoaded()`: This method is called after a content file has been read from disk, but before it is processed.
-- `OnContentRender()`: This method is called before a content file is rendered.
-- `OnHTMLRendered()`: This method is called after a content file has been rendered to HTML.
 - `OnPostBuild()`: This method is called after the build process has completed.
 
 ## The Plugin Interface
@@ -37,4 +34,3 @@ To learn how to create your own plugins, check out the following guides:
 - **[Creating Plugins](./creating-plugins.html):** A step-by-step guide to creating your first plugin.
 - **[Example Plugin](./example-plugin.html):** A practical example of a plugin that adds a new CLI command.
 - **[Building and Installing](./building-and-installing.html):** Learn how to build and install plugins for your projects.
-

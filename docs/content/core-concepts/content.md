@@ -71,28 +71,28 @@ This is the content of my blog post.
 
 ### Accessing Frontmatter in Templates
 
-You can access these variables in your templates using the `.` (dot) notation. For example, to display the title and author in a layout:
+You can access these variables in your templates using the `.Page` object. For example, to display the title and author in a layout:
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-  <title>{{ .title }}</title>
+  <title>{{ .Page.title }}</title>
 </head>
 <body>
-  <h1>{{ .title }}</h1>
-  <p>By {{ .author }} on {{ .date }}</p>
+  <h1>{{ .Page.title }}</h1>
+  <p>By {{ .Page.author }} on {{ .Page.date }}</p>
 
   <div>
-    {{ .content }}
+    {{ .Content }}
   </div>
 </body>
 </html>
 ```
 
-In this example, `{{ .content }}` is a special variable that contains the rendered HTML of the Markdown content.
+In this example, `{{ .Content }}` is a special variable that contains the rendered HTML of the Markdown content.
 
-Frontmatter is only supported for Markdown files and is ignored in HTML files.
+Frontmatter is supported for both Markdown and HTML files.
 
 ## Layouts
 

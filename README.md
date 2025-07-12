@@ -1,10 +1,10 @@
-# evoke
+# ✨ Evoke: Simply magical.
 
-A powerful little static site generator.
+Evoke is a static site generator that operates on the principle of "It just works." It's not about complex commands or convoluted processes, but about the purity and speed of a tool so refined it feels like a natural extension of the developer's will.
 
 ## Overview
 
-The purpose of evoke is to be a small, yet powerful static site generator. This is achived through the following methods:
+The purpose of evoke is to be a small, yet powerful static site generator. This is achieved through the following methods:
 
 - Sensible defaults allowing for near zero configuration.
 - Complete template support with no opinions.
@@ -15,7 +15,7 @@ There are more things we could mention but I think its best to let you experienc
 ## Usage
 
 - `evoke build`: builds your content into static HTML.
-- `evoke serve`: builds and serves the site on a local development server.
+- `evoke serve`: builds and serves the site on a local development server with live reloading.
 - `evoke init`: initializes a new Evoke project.
 
 ## Getting Started
@@ -100,11 +100,35 @@ This will create the following routes:
 - posts/post-1.html
 - posts/post-2.html
 
-Notice how we have mixed HTML and markdown in the content directories? This is to allow more advanced sites to be made. HTML files will have any template strings expanded and the rest of the file will just be the same. Markdown files on the other hand will utilize a special template which we will talk about later.
+Notice how we have mixed HTML and markdown in the content directories? This is to allow more advanced sites to be made. HTML files will have any template strings expanded and the rest of the file will just be the same. Markdown files on the other hand will be converted to HTML and injected into a layout.
 
 ### Public Directory
 
 This directory will simply be copied to the dist folder when building. This is so you can include images, css, javascript, or whatever in your pages.
+
+### Front Matter
+
+You can add metadata to your Markdown and HTML files using YAML front matter. This is a block of YAML at the top of the file, enclosed in triple-dashed lines (`---`).
+
+Front matter allows you to define variables that can be accessed in your templates. This is useful for setting page titles, authors, dates, and other custom data.
+
+```markdown
+---
+title: "My First Blog Post"
+author: "Jane Doe"
+date: "2024-07-08"
+---
+
+# My First Blog Post
+
+This is the content of my blog post.
+```
+
+### Layouts
+
+Evoke uses a simple yet powerful layout system to help you create consistent page structures. By default, Evoke will look for a `_layout.html` file in the same directory as your content file. If it doesn't find one, it will look in the parent directory, and so on, all the way up to the `content` directory.
+
+This allows you to create a default layout for your entire site, and then override it for specific sections.
 
 ### Partials Directory
 
@@ -131,9 +155,11 @@ Outside of this there arent many rules that need followed by the core program. A
 Evoke allows for custom plugins to be loaded on a per project basis. Just add a `plugins` folder to the project and add your plugins.
 
 Plugins can hook into the following:
-- BeforeBuild: plugin will run before the core build process
-- AfterBuild: plugin will run after the core build process
+- `OnPreBuild`: Runs before the build process begins.
+- `OnConfigLoaded`: Runs after the configuration is loaded.
+- `OnPublicAssetsCopied`: Runs after the public assets have been copied.
+- `OnPostBuild`: Runs after the build process has completed.
 
-## Wraping Up
+## Conclusion
 
-Yeah so this pretty much sums everything you need to know up. Only one last thing you need to be aware of, its "evoke" not "Evoke". Have a great day.
+This guide provides a high-level overview of Evoke's features. For more detailed information, please refer to the official documentation in the `docs` directory. We encourage you to explore the codebase and contribute to the project.

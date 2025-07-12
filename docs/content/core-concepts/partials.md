@@ -10,7 +10,7 @@ To create a partial, simply create an HTML file in the `partials` directory.
 
 ```html
 <header>
-  <h1>{{ .siteName }}</h1>
+  <h1>{{ .Global.siteName }}</h1>
   <p>Welcome to my awesome site!</p>
 </header>
 ```
@@ -26,13 +26,13 @@ To include a partial, use the `template` keyword. The `.` (dot) passes the curre
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>{{ .title }}</title>
+  <title>{{ .Page.title }}</title>
 </head>
 <body>
   {{ template "header.html" . }}
 
   <main>
-    {{ .content }}
+    {{ .Content }}
   </main>
 
   {{ template "footer.html" . }}
@@ -97,7 +97,7 @@ You can then loop through these posts in your template and render a partial for 
 ```html
 <h1>Blog</h1>
 <ul>
-  {{ range .posts }}
+  {{ range .Global.posts }}
     {{ template "post-summary.html" . }}
   {{ end }}
 </ul>
@@ -125,7 +125,7 @@ Let's create a `profile` partial that uses a `card` partial.
 
 ```html
 <div class="profile">
-  {{ template "card.html" (dict "Title" .Name "Content" .Bio) }}
+  {{ template "card.html" (dict "Title" .Page.Name "Content" .Page.Bio) }}
 </div>
 ```
 
@@ -136,8 +136,8 @@ Now, you can use the `profile` partial in your content files:
 ```markdown
 ---
 title: "About Me"
-name: "John Doe"
-bio: "I am a web developer."
+Name: "John Doe"
+Bio: "I am a web developer."
 ---
 
 # About Me
