@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"os"
+	"runtime"
 
 	"github.com/Bitlatte/evoke/pkg/build"
 	init_pkg "github.com/Bitlatte/evoke/pkg/init"
@@ -35,13 +36,18 @@ func main() {
 						Name:  "clean",
 						Usage: "Perform a clean build, bypassing the cache",
 					},
+					&cli.IntFlag{
+						Name:  "workers",
+						Value: runtime.NumCPU(),
+						Usage: "Number of worker goroutines to use for processing content",
+					},
 				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					if cmd.Bool("verbose") {
 						logger.Logger.SetLevel(log.DebugLevel)
 					}
 					logger.Logger.Info("Starting build...")
-					err := build.Build("dist", cmd.Bool("clean"))
+					err := build.Build("dist", cmd.Bool("clean"), cmd.Int("workers"))
 					if err != nil {
 						logger.Logger.Error("Build failed", "error", err)
 						return err

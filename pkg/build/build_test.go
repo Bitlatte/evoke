@@ -3,6 +3,7 @@ package build_test
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/Bitlatte/evoke/pkg/build"
@@ -36,7 +37,7 @@ func TestBuild(t *testing.T) {
 	os.WriteFile("public/style.css", []byte("body { color: red; }"), 0644)
 
 	// Run the build
-	err = build.Build("dist", false)
+	err = build.Build("dist", false, runtime.NumCPU())
 	assert.NoError(t, err)
 
 	// Assert the results
@@ -105,7 +106,7 @@ func BenchmarkBuild(b *testing.B) {
 		// measurement of a clean build.
 		os.RemoveAll("dist")
 
-		err = build.Build("dist", true)
+		err = build.Build("dist", true, runtime.NumCPU())
 		if err != nil {
 			b.Fatal(err)
 		}

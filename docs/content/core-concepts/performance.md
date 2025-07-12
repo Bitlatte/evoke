@@ -48,7 +48,7 @@ This benchmark measures the time it takes to build a site with 100 pages from sc
 
 | Benchmark      | Time/op (ms) | Memory/op (MB) | Allocations/op |
 | -------------- | ------------ | -------------- | -------------- |
-| BenchmarkBuild | 40.03        | 10.38          | 51417          |
+| BenchmarkBuild | 46.15        | 7.62           | 31283          |
 
 ### Pipelines (`pkg/pipelines`)
 
@@ -56,9 +56,9 @@ These benchmarks measure the time it takes for each content pipeline to process 
 
 | Benchmark                 | Time/op (ms) | Memory/op (KB) | Allocations/op | Notes                               |
 | ------------------------- | ------------ | -------------- | -------------- | ----------------------------------- |
-| BenchmarkMarkdownPipeline | 0.21         | 111.52         | 437            | Processes a 100-paragraph MD file   |
-| BenchmarkHTMLPipeline     | 0.06         | 32.72          | 16             | Processes a 100-paragraph HTML file |
-| BenchmarkCopyPipeline     | 0.61         | 1049.01        | 10             | Processes a 1MB file                |
+| BenchmarkMarkdownPipeline | 0.15         | 111.13         | 429            | Processes a 100-paragraph MD file   |
+| BenchmarkHTMLPipeline     | 0.01         | 32.34          | 8              | Processes a 100-paragraph HTML file |
+| BenchmarkCopyPipeline     | 0.12         | 1048.63        | 2              | Processes a 1MB file                |
 
 ### Partials (`pkg/partials`)
 
@@ -66,7 +66,7 @@ This benchmark measures the time it takes to load and parse 50 partial templates
 
 | Benchmark             | Time/op (ms) | Memory/op (KB) | Allocations/op |
 | --------------------- | ------------ | -------------- | -------------- |
-| BenchmarkLoadPartials | 1.11         | 246.04         | 2148           |
+| BenchmarkLoadPartials | 2.24         | 246.05         | 2148           |
 
 ### Plugins (`pkg/plugins`)
 
@@ -74,7 +74,7 @@ This benchmark measures the overhead of the plugin system by sending a 10KB payl
 
 | Benchmark       | Time/op (ms) | Memory/op (KB) | Allocations/op |
 | --------------- | ------------ | -------------- | -------------- |
-| BenchmarkPlugin | 0.10         | 76.30          | 187            |
+| BenchmarkPlugin | 0.10         | 76.10          | 187            |
 
 ### Util (`pkg/util`)
 
@@ -82,8 +82,8 @@ These benchmarks measure the performance of common file system operations.
 
 | Benchmark              | Time/op (ms) | Memory/op (MB) | Allocations/op | Notes                           |
 | ---------------------- | ------------ | -------------- | -------------- | ------------------------------- |
-| BenchmarkCopyFile      | 0.77         | 0.03           | 10             | Copies a 1MB file               |
-| BenchmarkCopyDirectory | 12.91        | 2.44           | 1603           | Copies a directory with 100+ files |
+| BenchmarkCopyFile      | 0.96         | 0.03           | 10             | Copies a 1MB file               |
+| BenchmarkCopyDirectory | 14.06        | 2.43           | 1603           | Copies a directory with 100+ files |
 
 ## Comparative Analysis
 
@@ -93,10 +93,10 @@ The test was conducted on an Apple M1 CPU. Each project was set up with a basic 
 
 | SSG      | Build Time (real) | Time Difference | Times Slower |
 | -------- | ----------------- | --------------- | ------------ |
-| Evoke    | 3.890s            | -               | -            |
-| Hugo     | 4.453s            | +0.563s         | 1.14x        |
-| Eleventy | 4.650s            | +0.197s         | 1.04x        |
-| Gatsby   | 22.432s           | +17.782s        | 5.77x        |
+| Evoke    | 1.50s             | -               | -            |
+| Hugo     | 4.453s            | +2.953s         | 2.97x        |
+| Eleventy | 4.650s            | +3.15s          | 3.10x        |
+| Gatsby   | 22.432s           | +20.932s        | 14.95x       |
 
 As the results show, Evoke is significantly faster than the other static site generators in this test case. This is a testament to Evoke's lightweight architecture and efficient design. While this benchmark is not exhaustive, it provides a strong indication of Evoke's performance advantages for content-heavy sites.
 

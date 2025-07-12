@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -167,7 +168,7 @@ func buildAndCache() error {
 	}
 	defer os.RemoveAll(tempDir)
 
-	if err := build.Build(tempDir, false); err != nil {
+	if err := build.Build(tempDir, false, runtime.NumCPU()); err != nil {
 		return err
 	}
 

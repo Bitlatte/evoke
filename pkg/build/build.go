@@ -4,14 +4,14 @@ package build
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 
 	"html/template"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/Bitlatte/evoke/pkg/cache"
 	"github.com/Bitlatte/evoke/pkg/config"
@@ -129,7 +129,7 @@ func LoadPartials() (*partials.Partials, error) {
 }
 
 // ProcessContent processes the content.
-func ProcessContent(outputDir string, loadedConfig map[string]interface{}, t *partials.Partials, loadedPlugins []plugins.Plugin) error {
+func ProcessContent(outputDir string, loadedConfig map[string]interface{}, t *partials.Partials, loadedPlugins []plugins.Plugin, workerCount int) error {
 	logger.Logger.Debug("Processing content...")
 	gm := goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
@@ -177,7 +177,7 @@ func ProcessContent(outputDir string, loadedConfig map[string]interface{}, t *pa
 		return fmt.Errorf("error getting files to rebuild: %w", err)
 	}
 
-	if err := ProcessContentWithProcessor(contentProcessor, loadedConfig, toRebuild); err != nil {
+	if err := ProcessContentWithProcessor(contentProcessor, loadedConfig, toRebuild, workerCount); err != nil {
 		return err
 	}
 
@@ -190,7 +190,7 @@ func ProcessContent(outputDir string, loadedConfig map[string]interface{}, t *pa
 }
 
 // ProcessContentWithProcessor processes the content with a given processor.
-func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig map[string]interface{}, toRebuild map[string]bool) error {
+func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig map[string]interface{}, toRebuild map[string]bool, workerCount int) error {
 	if _, statErr := os.Stat("content"); os.IsNotExist(statErr) {
 		return nil // No content directory, nothing to do.
 	}
@@ -212,7 +212,7 @@ func ProcessContentWithProcessor(contentProcessor *content.Content, loadedConfig
 	}
 
 	// Start worker goroutines
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for i := 0; i < workerCount; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -479,7 +479,7 @@ func getFilesToRebuild(c *cache.Cache, d *dag.Graph) (map[string]bool, error) {
 }
 
 // Build builds the site.
-func Build(outputDir string, clean bool) error {
+func Build(outputDir string, clean bool, workerCount int) error {
 	// If clean is true, remove the cache file
 	if clean {
 		if err := os.Remove(filepath.Join(outputDir, ".cache")); err != nil {
@@ -522,7 +522,7 @@ func Build(outputDir string, clean bool) error {
 	}
 
 	// Run OnConfigLoaded hooks
-	configBytes, err := json.Marshal(loadedConfig)
+	configBytes, err := yaml.Marshal(loadedConfig)
 	if err != nil {
 		return fmt.Errorf("error marshalling config: %w", err)
 	}
@@ -530,7 +530,7 @@ func Build(outputDir string, clean bool) error {
 	if err != nil {
 		return err
 	}
-	if err := json.Unmarshal(configBytes, &loadedConfig); err != nil {
+	if err := yaml.Unmarshal(configBytes, &loadedConfig); err != nil {
 		return fmt.Errorf("error unmarshalling config: %w", err)
 	}
 
@@ -540,7 +540,7 @@ func Build(outputDir string, clean bool) error {
 		return fmt.Errorf("error loading partials: %w", err)
 	}
 
-	if err := ProcessContent(outputDir, loadedConfig, t, loadedPlugins); err != nil {
+	if err := ProcessContent(outputDir, loadedConfig, t, loadedPlugins, workerCount); err != nil {
 		return err
 	}
 

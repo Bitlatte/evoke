@@ -3,7 +3,6 @@ package pipelines
 
 import (
 	"bytes"
-	"os"
 	"path/filepath"
 )
 
@@ -34,17 +33,5 @@ func (p *HTMLPipeline) Process(asset *Asset) (*Asset, error) {
 
 	asset.Content = buf
 
-	outputPath := filepath.Join("dist", asset.Path[len("content"):])
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return nil, err
-	}
-
-	outFile, err := os.Create(outputPath)
-	if err != nil {
-		return nil, err
-	}
-	defer outFile.Close()
-
-	_, err = outFile.Write(buf.Bytes())
-	return asset, err
+	return asset, nil
 }

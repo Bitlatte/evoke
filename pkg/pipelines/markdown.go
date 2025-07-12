@@ -3,7 +3,6 @@ package pipelines
 
 import (
 	"bytes"
-	"os"
 	"path/filepath"
 
 	"github.com/yuin/goldmark"
@@ -51,19 +50,7 @@ func (p *MarkdownPipeline) Process(asset *Asset) (*Asset, error) {
 	asset.Metadata = frontMatter
 	asset.Path = asset.Path[:len(asset.Path)-3] + ".html"
 
-	outputPath := filepath.Join("dist", asset.Path[len("content"):])
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return nil, err
-	}
-
-	outFile, err := os.Create(outputPath)
-	if err != nil {
-		return nil, err
-	}
-	defer outFile.Close()
-
-	_, err = outFile.Write(output.Bytes())
-	return asset, err
+	return asset, nil
 }
 
 // parseFrontMatter parses the front matter from the content.
