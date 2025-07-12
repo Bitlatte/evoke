@@ -23,6 +23,17 @@ There are more things we could mention but I think its best to let you experienc
 ### Installation
 To generate the man pages, you will need to have `pandoc` installed.
 
+To install the man page locally, run the following command:
+```bash
+make install-man
+```
+After installing the man page, you can view it with `man evoke`.
+
+To uninstall the man page, run:
+```bash
+make uninstall-man
+```
+
 You can install Evoke in one of the following ways:
 
 **1. Installer Script (Recommended):**

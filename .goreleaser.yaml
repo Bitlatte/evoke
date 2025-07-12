@@ -40,7 +40,7 @@ archives:
     files:
       - LICENSE
       - README.md
-      - man/*
+      - man/evoke.1
 
 changelog:
   sort: asc
@@ -61,9 +61,8 @@ nfpms:
       - "rpm"
     bindir: "/usr/local/bin"
     contents:
-      - src: "man/"
-        dst: "/usr/local/share/man/man1/"
-        type: "dir"
+      - src: "man/evoke.1"
+        dst: "/usr/local/share/man/man1/evoke.1"
 
 release:
   footer: >-
