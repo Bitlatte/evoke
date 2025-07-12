@@ -5,23 +5,17 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/Bitlatte/evoke/pkg/defaults"
-	"github.com/charmbracelet/huh"
 )
 
 // Run initializes a new project.
 func Run() error {
 	var projectName string
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Project Name").
-				Value(&projectName),
-		),
-	)
-
-	if err := form.Run(); err != nil {
+	prompt := &survey.Input{
+		Message: "Project Name",
+	}
+	if err := survey.AskOne(prompt, &projectName); err != nil {
 		return err
 	}
 
@@ -46,8 +40,17 @@ func Run() error {
 	}
 
 	// Create subdirectories.
-	subdirs := []string{"content", "partials"}
-	for _, subdir := range subdirs {
+	var selectedDirs []string
+	dirPrompt := &survey.MultiSelect{
+		Message: "Select directories to create",
+		Options: []string{"content", "partials", "public", "plugins"},
+		Default: []string{"content", "partials"},
+	}
+	if err := survey.AskOne(dirPrompt, &selectedDirs); err != nil {
+		return err
+	}
+
+	for _, subdir := range selectedDirs {
 		if err := os.MkdirAll(fmt.Sprintf("%s/%s", directory, subdir), os.ModePerm); err != nil {
 			return err
 		}

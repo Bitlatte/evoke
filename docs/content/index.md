@@ -1,4 +1,4 @@
-# Evoke: The magic of a simple build.
+# Evoke: Simply magical.
 
 Welcome to the official documentation for Evoke. Evoke is a static site generator that operates on the principle of "It just works." It's not about complex commands or convoluted processes, but about the purity and speed of a tool so refined it feels like a natural extension of the developer's will.
 

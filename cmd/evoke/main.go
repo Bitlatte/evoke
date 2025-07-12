@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/Bitlatte/evoke/pkg/build"
 	init_pkg "github.com/Bitlatte/evoke/pkg/init"
@@ -21,7 +22,7 @@ var version = "dev"
 func main() {
 	cmd := &cli.Command{
 		Name:    "evoke",
-		Usage:   "a powerful little static site generator",
+		Usage:   "Simply magical.",
 		Version: version,
 		Commands: []*cli.Command{
 			{
@@ -46,13 +47,14 @@ func main() {
 					if cmd.Bool("verbose") {
 						logger.Logger.SetLevel(log.DebugLevel)
 					}
-					logger.Logger.Info("Starting build...")
+					start := time.Now()
 					err := build.Build("dist", cmd.Bool("clean"), cmd.Int("workers"))
 					if err != nil {
 						logger.Logger.Error("Build failed", "error", err)
 						return err
 					}
-					logger.Logger.Info("✨ Build complete!")
+					duration := time.Since(start)
+					logger.Logger.Info("✨ Build complete!", "duration", duration)
 					return nil
 				},
 			},
